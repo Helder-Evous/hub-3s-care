@@ -14,7 +14,285 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          alert_type: string
+          channel_id: string | null
+          clinic_id: string | null
+          created_at: string
+          id: string
+          message: string
+          notes: string | null
+          resolved_at: string | null
+          responsible: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          status: Database["public"]["Enums"]["alert_status"]
+        }
+        Insert: {
+          alert_type: string
+          channel_id?: string | null
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          notes?: string | null
+          resolved_at?: string | null
+          responsible?: string | null
+          severity: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["alert_status"]
+        }
+        Update: {
+          alert_type?: string
+          channel_id?: string | null
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          notes?: string | null
+          resolved_at?: string | null
+          responsible?: string | null
+          severity?: Database["public"]["Enums"]["alert_severity"]
+          status?: Database["public"]["Enums"]["alert_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alerts_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          entity: string
+          entity_id: string | null
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          entity: string
+          entity_id?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: []
+      }
+      channel_monitoring: {
+        Row: {
+          channel_id: string
+          connected: boolean | null
+          created_at: string
+          data_origin: Database["public"]["Enums"]["data_origin"]
+          has_restriction: boolean | null
+          id: string
+          last_check: string
+          last_message_received: string | null
+          last_message_sent: string | null
+          message_limit: number | null
+          number_status: Database["public"]["Enums"]["number_status"] | null
+          qr_disconnected: boolean | null
+          quality_rating: Database["public"]["Enums"]["quality_rating"] | null
+          receiving_messages: boolean | null
+          sending_messages: boolean | null
+          session_expired: boolean | null
+        }
+        Insert: {
+          channel_id: string
+          connected?: boolean | null
+          created_at?: string
+          data_origin?: Database["public"]["Enums"]["data_origin"]
+          has_restriction?: boolean | null
+          id?: string
+          last_check?: string
+          last_message_received?: string | null
+          last_message_sent?: string | null
+          message_limit?: number | null
+          number_status?: Database["public"]["Enums"]["number_status"] | null
+          qr_disconnected?: boolean | null
+          quality_rating?: Database["public"]["Enums"]["quality_rating"] | null
+          receiving_messages?: boolean | null
+          sending_messages?: boolean | null
+          session_expired?: boolean | null
+        }
+        Update: {
+          channel_id?: string
+          connected?: boolean | null
+          created_at?: string
+          data_origin?: Database["public"]["Enums"]["data_origin"]
+          has_restriction?: boolean | null
+          id?: string
+          last_check?: string
+          last_message_received?: string | null
+          last_message_sent?: string | null
+          message_limit?: number | null
+          number_status?: Database["public"]["Enums"]["number_status"] | null
+          qr_disconnected?: boolean | null
+          quality_rating?: Database["public"]["Enums"]["quality_rating"] | null
+          receiving_messages?: boolean | null
+          sending_messages?: boolean | null
+          session_expired?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_monitoring_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          activated_at: string | null
+          carrier: string | null
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          clinic_id: string
+          created_at: string
+          device: string | null
+          id: string
+          notes: string | null
+          phone_number: string
+          responsible: string | null
+          status: Database["public"]["Enums"]["channel_status"]
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          carrier?: string | null
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          clinic_id: string
+          created_at?: string
+          device?: string | null
+          id?: string
+          notes?: string | null
+          phone_number: string
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["channel_status"]
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          carrier?: string | null
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          clinic_id?: string
+          created_at?: string
+          device?: string | null
+          id?: string
+          notes?: string | null
+          phone_number?: string
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["channel_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinics: {
+        Row: {
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          responsible: string | null
+          state: string | null
+          status: Database["public"]["Enums"]["clinic_status"]
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          responsible?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["clinic_status"]
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          responsible?: string | null
+          state?: string | null
+          status?: Database["public"]["Enums"]["clinic_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contingency_items: {
+        Row: {
+          clinic_id: string
+          has_approved_template: boolean
+          has_backup_api: boolean
+          has_backup_chip: boolean
+          has_backup_device: boolean
+          has_backup_number: boolean
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          has_approved_template?: boolean
+          has_backup_api?: boolean
+          has_backup_chip?: boolean
+          has_backup_device?: boolean
+          has_backup_number?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          has_approved_template?: boolean
+          has_backup_api?: boolean
+          has_backup_chip?: boolean
+          has_backup_device?: boolean
+          has_backup_number?: boolean
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingency_items_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: true
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +301,29 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      alert_severity: "baixa" | "media" | "alta" | "critica"
+      alert_status: "aberto" | "em_tratamento" | "resolvido"
+      channel_status:
+        | "ativo"
+        | "em_atencao"
+        | "critico"
+        | "livre"
+        | "bloqueado"
+        | "desconectado"
+      channel_type:
+        | "api_oficial"
+        | "whatsapp_comum"
+        | "numero_reserva"
+        | "api_reserva"
+      clinic_status: "ativa" | "pausada" | "cancelada"
+      data_origin: "meta_api" | "plataforma" | "manual" | "robo_tela"
+      number_status:
+        | "conectado"
+        | "restrito"
+        | "banido"
+        | "pendente"
+        | "desconhecido"
+      quality_rating: "alto" | "medio" | "baixo" | "desconhecido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +450,33 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      alert_severity: ["baixa", "media", "alta", "critica"],
+      alert_status: ["aberto", "em_tratamento", "resolvido"],
+      channel_status: [
+        "ativo",
+        "em_atencao",
+        "critico",
+        "livre",
+        "bloqueado",
+        "desconectado",
+      ],
+      channel_type: [
+        "api_oficial",
+        "whatsapp_comum",
+        "numero_reserva",
+        "api_reserva",
+      ],
+      clinic_status: ["ativa", "pausada", "cancelada"],
+      data_origin: ["meta_api", "plataforma", "manual", "robo_tela"],
+      number_status: [
+        "conectado",
+        "restrito",
+        "banido",
+        "pendente",
+        "desconhecido",
+      ],
+      quality_rating: ["alto", "medio", "baixo", "desconhecido"],
+    },
   },
 } as const
