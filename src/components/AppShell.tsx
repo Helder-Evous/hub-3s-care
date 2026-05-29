@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Building2, Radio, Bell, Tv, ShieldCheck, Sparkles } from "lucide-react";
+import { LayoutDashboard, Building2, Radio, Bell, Tv, ShieldCheck, Sparkles, FileText, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NavItem =
@@ -13,6 +13,8 @@ const nav: NavItem[] = [
   { to: "/crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/crm/clinicas", label: "Clínicas", icon: Building2 },
   { to: "/crm/canais", label: "Canais", icon: Radio },
+  { to: "/crm/templates", label: "Templates Meta", icon: FileText },
+  { to: "/crm/volume", label: "Volume API", icon: BarChart3 },
   { to: "/crm/contingencia", label: "Contingência", icon: ShieldCheck },
   { to: "/crm/alertas", label: "Alertas", icon: Bell },
   { to: "/tv", label: "Modo TV", icon: Tv },

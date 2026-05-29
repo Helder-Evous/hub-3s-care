@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CrmIndexRouteImport } from './routes/crm.index'
+import { Route as CrmVolumeRouteImport } from './routes/crm.volume'
+import { Route as CrmTemplatesRouteImport } from './routes/crm.templates'
 import { Route as CrmDashboardRouteImport } from './routes/crm.dashboard'
 import { Route as CrmContingenciaRouteImport } from './routes/crm.contingencia'
 import { Route as CrmCanaisRouteImport } from './routes/crm.canais'
@@ -32,6 +34,16 @@ const IndexRoute = IndexRouteImport.update({
 const CrmIndexRoute = CrmIndexRouteImport.update({
   id: '/crm/',
   path: '/crm/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmVolumeRoute = CrmVolumeRouteImport.update({
+  id: '/crm/volume',
+  path: '/crm/volume',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmTemplatesRoute = CrmTemplatesRouteImport.update({
+  id: '/crm/templates',
+  path: '/crm/templates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmDashboardRoute = CrmDashboardRouteImport.update({
@@ -72,6 +84,8 @@ export interface FileRoutesByFullPath {
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
   '/crm/dashboard': typeof CrmDashboardRoute
+  '/crm/templates': typeof CrmTemplatesRoute
+  '/crm/volume': typeof CrmVolumeRoute
   '/crm/': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
@@ -83,6 +97,8 @@ export interface FileRoutesByTo {
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
   '/crm/dashboard': typeof CrmDashboardRoute
+  '/crm/templates': typeof CrmTemplatesRoute
+  '/crm/volume': typeof CrmVolumeRoute
   '/crm': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas': typeof CrmClinicasIndexRoute
@@ -95,6 +111,8 @@ export interface FileRoutesById {
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
   '/crm/dashboard': typeof CrmDashboardRoute
+  '/crm/templates': typeof CrmTemplatesRoute
+  '/crm/volume': typeof CrmVolumeRoute
   '/crm/': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
@@ -108,6 +126,8 @@ export interface FileRouteTypes {
     | '/crm/canais'
     | '/crm/contingencia'
     | '/crm/dashboard'
+    | '/crm/templates'
+    | '/crm/volume'
     | '/crm/'
     | '/crm/clinicas/$id'
     | '/crm/clinicas/'
@@ -119,6 +139,8 @@ export interface FileRouteTypes {
     | '/crm/canais'
     | '/crm/contingencia'
     | '/crm/dashboard'
+    | '/crm/templates'
+    | '/crm/volume'
     | '/crm'
     | '/crm/clinicas/$id'
     | '/crm/clinicas'
@@ -130,6 +152,8 @@ export interface FileRouteTypes {
     | '/crm/canais'
     | '/crm/contingencia'
     | '/crm/dashboard'
+    | '/crm/templates'
+    | '/crm/volume'
     | '/crm/'
     | '/crm/clinicas/$id'
     | '/crm/clinicas/'
@@ -142,6 +166,8 @@ export interface RootRouteChildren {
   CrmCanaisRoute: typeof CrmCanaisRoute
   CrmContingenciaRoute: typeof CrmContingenciaRoute
   CrmDashboardRoute: typeof CrmDashboardRoute
+  CrmTemplatesRoute: typeof CrmTemplatesRoute
+  CrmVolumeRoute: typeof CrmVolumeRoute
   CrmIndexRoute: typeof CrmIndexRoute
   CrmClinicasIdRoute: typeof CrmClinicasIdRoute
   CrmClinicasIndexRoute: typeof CrmClinicasIndexRoute
@@ -168,6 +194,20 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/crm/'
       preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm/volume': {
+      id: '/crm/volume'
+      path: '/crm/volume'
+      fullPath: '/crm/volume'
+      preLoaderRoute: typeof CrmVolumeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm/templates': {
+      id: '/crm/templates'
+      path: '/crm/templates'
+      fullPath: '/crm/templates'
+      preLoaderRoute: typeof CrmTemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm/dashboard': {
@@ -222,6 +262,8 @@ const rootRouteChildren: RootRouteChildren = {
   CrmCanaisRoute: CrmCanaisRoute,
   CrmContingenciaRoute: CrmContingenciaRoute,
   CrmDashboardRoute: CrmDashboardRoute,
+  CrmTemplatesRoute: CrmTemplatesRoute,
+  CrmVolumeRoute: CrmVolumeRoute,
   CrmIndexRoute: CrmIndexRoute,
   CrmClinicasIdRoute: CrmClinicasIdRoute,
   CrmClinicasIndexRoute: CrmClinicasIndexRoute,
@@ -229,3 +271,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
