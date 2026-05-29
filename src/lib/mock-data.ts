@@ -158,3 +158,95 @@ export const alerts: Alert[] = [
   { id: "a9", clinic_id: "c8", alert_type: "Quality Rating médio", severity: "media", message: "Quality Rating em MEDIUM por mais de 24h.", status: "em_tratamento", responsible: "Daniel Castro", created_at: hours(18) },
   { id: "a10", clinic_id: "c1", alert_type: "Verificação concluída", severity: "baixa", message: "Rotina de checagem executada com sucesso.", status: "resolvido", created_at: hours(1), resolved_at: mins(20) },
 ];
+
+// ============= Templates Meta =============
+export type TemplateCategory = "utility" | "marketing" | "authentication";
+export type TemplateStatus = "aprovado" | "pendente" | "reprovado" | "pausado" | "desativado";
+
+export interface MetaTemplate {
+  id: string;
+  channel_id: string; // API Oficial channel
+  clinic_id: string;
+  name: string;
+  category: TemplateCategory;
+  previous_category?: TemplateCategory;
+  status: TemplateStatus;
+  last_check: string;
+  volume_7d: number;
+  cost_per_message: number; // BRL
+  last_sent_at?: string;
+}
+
+// Cost reference per category (BRL) — valores estimados
+export const templateCostByCategory: Record<TemplateCategory, number> = {
+  utility: 0.04,
+  marketing: 0.20,
+  authentication: 0.06,
+};
+
+export const templates: MetaTemplate[] = [
+  // c1 — saudável
+  { id: "t1", channel_id: "ch1", clinic_id: "c1", name: "confirmacao_agendamento", category: "utility", status: "aprovado", last_check: mins(20), volume_7d: 4820, cost_per_message: 0.04, last_sent_at: mins(8) },
+  { id: "t2", channel_id: "ch1", clinic_id: "c1", name: "lembrete_consulta", category: "utility", status: "aprovado", last_check: mins(20), volume_7d: 3110, cost_per_message: 0.04, last_sent_at: mins(15) },
+  { id: "t3", channel_id: "ch1", clinic_id: "c1", name: "aniversariante_paciente", category: "utility", status: "aprovado", last_check: mins(20), volume_7d: 410, cost_per_message: 0.04, last_sent_at: hours(3) },
+  { id: "t4", channel_id: "ch1", clinic_id: "c1", name: "campanha_retorno_6m", category: "marketing", status: "aprovado", last_check: mins(20), volume_7d: 920, cost_per_message: 0.20, last_sent_at: hours(6) },
+  { id: "t5", channel_id: "ch1", clinic_id: "c1", name: "codigo_verificacao", category: "authentication", status: "aprovado", last_check: mins(20), volume_7d: 0, cost_per_message: 0.06 },
+
+  // c2 — alerta: utility virou marketing
+  { id: "t6", channel_id: "ch4", clinic_id: "c2", name: "confirmacao_agendamento", category: "marketing", previous_category: "utility", status: "aprovado", last_check: mins(30), volume_7d: 2640, cost_per_message: 0.20, last_sent_at: mins(40) },
+  { id: "t7", channel_id: "ch4", clinic_id: "c2", name: "remarcacao_faltoso", category: "utility", status: "aprovado", last_check: mins(30), volume_7d: 870, cost_per_message: 0.04, last_sent_at: hours(2) },
+  { id: "t8", channel_id: "ch4", clinic_id: "c2", name: "pos_consulta_avaliacao", category: "marketing", status: "pausado", last_check: mins(30), volume_7d: 0, cost_per_message: 0.20 },
+
+  // c3 — crítico: template reprovado
+  { id: "t9", channel_id: "ch6", clinic_id: "c3", name: "confirmacao_agendamento", category: "utility", status: "reprovado", last_check: mins(15), volume_7d: 0, cost_per_message: 0.04 },
+  { id: "t10", channel_id: "ch6", clinic_id: "c3", name: "lembrete_consulta", category: "utility", status: "pendente", last_check: mins(15), volume_7d: 0, cost_per_message: 0.04 },
+
+  // c4 — normal
+  { id: "t11", channel_id: "ch8", clinic_id: "c4", name: "confirmacao_agendamento", category: "utility", status: "aprovado", last_check: mins(10), volume_7d: 2010, cost_per_message: 0.04, last_sent_at: mins(25) },
+  { id: "t12", channel_id: "ch8", clinic_id: "c4", name: "lembrete_consulta", category: "utility", status: "aprovado", last_check: mins(10), volume_7d: 1180, cost_per_message: 0.04, last_sent_at: mins(50) },
+  { id: "t13", channel_id: "ch8", clinic_id: "c4", name: "campanha_clareamento", category: "marketing", status: "aprovado", last_check: mins(10), volume_7d: 540, cost_per_message: 0.20, last_sent_at: hours(5) },
+
+  // c5 — template aprovado sem uso
+  { id: "t14", channel_id: "ch10", clinic_id: "c5", name: "confirmacao_agendamento", category: "utility", status: "aprovado", last_check: mins(25), volume_7d: 1620, cost_per_message: 0.04, last_sent_at: mins(35) },
+  { id: "t15", channel_id: "ch10", clinic_id: "c5", name: "aniversariante_paciente", category: "utility", status: "aprovado", last_check: mins(25), volume_7d: 0, cost_per_message: 0.04, last_sent_at: hours(120) },
+
+  // c6 — normal
+  { id: "t16", channel_id: "ch12", clinic_id: "c6", name: "confirmacao_agendamento", category: "utility", status: "aprovado", last_check: mins(12), volume_7d: 3220, cost_per_message: 0.04, last_sent_at: mins(18) },
+  { id: "t17", channel_id: "ch12", clinic_id: "c6", name: "lembrete_consulta", category: "utility", status: "aprovado", last_check: mins(12), volume_7d: 1740, cost_per_message: 0.04, last_sent_at: mins(30) },
+  { id: "t18", channel_id: "ch12", clinic_id: "c6", name: "campanha_implante", category: "marketing", status: "aprovado", last_check: mins(12), volume_7d: 380, cost_per_message: 0.20, last_sent_at: hours(8) },
+
+  // c8 — pausada
+  { id: "t19", channel_id: "ch16", clinic_id: "c8", name: "confirmacao_agendamento", category: "utility", status: "pausado", last_check: hours(2), volume_7d: 0, cost_per_message: 0.04 },
+];
+
+// ============= Volume API Oficial =============
+export interface ApiVolume {
+  channel_id: string;
+  clinic_id: string;
+  sent_today: number;
+  delivered_today: number;
+  read_today: number;
+  received_today: number;
+  last_sent_at?: string;
+  last_received_at?: string;
+  avg_daily_sent_7d: number;
+  cost_today: number;
+  cost_month: number;
+}
+
+export const apiVolumes: ApiVolume[] = [
+  // c1
+  { channel_id: "ch1", clinic_id: "c1", sent_today: 920, delivered_today: 905, read_today: 712, received_today: 188, last_sent_at: mins(8), last_received_at: mins(2), avg_daily_sent_7d: 880, cost_today: 51.20, cost_month: 1380.60 },
+  // c2 — custo subindo (marketing)
+  { channel_id: "ch4", clinic_id: "c2", sent_today: 640, delivered_today: 612, read_today: 380, received_today: 95, last_sent_at: mins(40), last_received_at: mins(12), avg_daily_sent_7d: 580, cost_today: 124.80, cost_month: 2840.00 },
+  // c3 — banido, sem envios
+  { channel_id: "ch6", clinic_id: "c3", sent_today: 0, delivered_today: 0, read_today: 0, received_today: 0, last_sent_at: hours(36), last_received_at: hours(36), avg_daily_sent_7d: 510, cost_today: 0, cost_month: 320.40 },
+  // c4
+  { channel_id: "ch8", clinic_id: "c4", sent_today: 410, delivered_today: 402, read_today: 305, received_today: 78, last_sent_at: mins(25), last_received_at: mins(11), avg_daily_sent_7d: 430, cost_today: 24.60, cost_month: 712.40 },
+  // c5 — sem envio há muito tempo
+  { channel_id: "ch10", clinic_id: "c5", sent_today: 180, delivered_today: 175, read_today: 110, received_today: 32, last_sent_at: hours(6), last_received_at: hours(3), avg_daily_sent_7d: 520, cost_today: 7.20, cost_month: 540.10 },
+  // c6
+  { channel_id: "ch12", clinic_id: "c6", sent_today: 1120, delivered_today: 1098, read_today: 870, received_today: 240, last_sent_at: mins(18), last_received_at: mins(7), avg_daily_sent_7d: 1050, cost_today: 68.40, cost_month: 1820.30 },
+  // c8 — pausada
+  { channel_id: "ch16", clinic_id: "c8", sent_today: 0, delivered_today: 0, read_today: 0, received_today: 0, last_sent_at: hours(48), last_received_at: hours(40), avg_daily_sent_7d: 60, cost_today: 0, cost_month: 42.10 },
+];
