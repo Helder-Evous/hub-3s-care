@@ -5,7 +5,8 @@ import { MetricCard } from "@/components/MetricCard";
 import { clinics, channels, contingency, alerts } from "@/lib/mock-data";
 import { clinicSummary, contingencyScore, contingencyClass } from "@/lib/calculations";
 import { channelTypeLabel, channelStatusLabel, dataOriginLabel, timeAgo, severityLabel, alertStatusLabel } from "@/lib/labels";
-import { ChevronLeft, ShieldCheck, Activity, Radio } from "lucide-react";
+import { ChevronLeft, ShieldCheck, Activity, Radio, FileText, Send } from "lucide-react";
+import { clinicTemplateSummary, clinicVolumeForApi, deliveryRate, readRate, fmtBRL, templateCategoryLabel, templateStatusLabel, templateCategoryTone, templateStatusTone, templateAlerts } from "@/lib/templates";
 
 export const Route = createFileRoute("/crm/clinicas/$id")({
   head: () => ({ meta: [{ title: "Clínica — Chips/Canais" }] }),
