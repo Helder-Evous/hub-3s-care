@@ -2,9 +2,13 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { LayoutDashboard, Building2, Radio, Bell, Tv, ShieldCheck, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const nav = [
+type NavItem =
+  | { section: string }
+  | { to: string; label: string; icon: typeof Sparkles; end?: boolean };
+
+const nav: NavItem[] = [
   { to: "/", label: "Hub 3S", icon: Sparkles, end: true },
-  { to: "/crm", label: "Produto CRM", icon: LayoutDashboard },
+  { to: "/crm", label: "Produto CRM", icon: LayoutDashboard, end: true },
   { section: "Chips / Canais" },
   { to: "/crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/crm/clinicas", label: "Clínicas", icon: Building2 },
@@ -12,7 +16,7 @@ const nav = [
   { to: "/crm/contingencia", label: "Contingência", icon: ShieldCheck },
   { to: "/crm/alertas", label: "Alertas", icon: Bell },
   { to: "/tv", label: "Modo TV", icon: Tv },
-] as const;
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
