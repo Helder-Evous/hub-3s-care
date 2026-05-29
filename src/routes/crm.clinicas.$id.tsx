@@ -59,6 +59,8 @@ function ClinicDetail() {
           <MetricCard label="Alertas abertos" value={clinicAlerts.filter((a) => a.status !== "resolvido").length} tone="warning" />
         </div>
 
+        <ClinicTemplatesAndVolume clinicId={id} />
+
         <section className="mt-10">
           <h2 className="text-lg font-semibold mb-3">Canais</h2>
           <div className="grid gap-3">
