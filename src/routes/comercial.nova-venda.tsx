@@ -1,12 +1,12 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { mockClientes } from "@/features/clientes/mock-data";
+import { useClientes } from "@/features/clientes/queries";
+import { useRegisterSale } from "@/features/clientes/mutations";
 import { productLabel } from "@/features/clientes/types";
 import type { ProductType } from "@/features/clientes/types";
 import { cn } from "@/shared/lib/utils";
-import { Search, PlusCircle, CheckCircle2, ChevronLeft } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Search, PlusCircle, CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/comercial/nova-venda")({
   head: () => ({ meta: [{ title: "Nova Venda — Hub 3S" }] }),
@@ -46,6 +46,8 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 
 function NovaVendaPage() {
   const navigate = useNavigate();
+  const { data: clientes = [] } = useClientes();
+  const { mutateAsync: registerSale, isPending, isError } = useRegisterSale();
 
   const [clinicSearch, setClinicSearch] = useState("");
   const [selectedClinicId, setSelectedClinicId] = useState("");
@@ -61,7 +63,7 @@ function NovaVendaPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const filteredClinics = clinicSearch.trim()
-    ? mockClientes.filter(
+    ? clientes.filter(
         (c) =>
           c.name.toLowerCase().includes(clinicSearch.toLowerCase()) ||
           (c.nome_fantasia ?? "").toLowerCase().includes(clinicSearch.toLowerCase()) ||
@@ -69,7 +71,7 @@ function NovaVendaPage() {
       )
     : [];
 
-  const selectedClinic = mockClientes.find((c) => c.id === selectedClinicId);
+  const selectedClinic = clientes.find((c) => c.id === selectedClinicId);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -80,14 +82,31 @@ function NovaVendaPage() {
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
-    setToast(true);
-    setTimeout(() => {
-      setToast(false);
-      navigate({ to: "/onboarding" });
-    }, 2000);
+    if (!validate() || !product) return;
+
+    try {
+      const result = await registerSale({
+        clinic_id: selectedClinicId,
+        product: product as ProductType,
+        value_monthly: valueMonthly ? parseFloat(valueMonthly) : undefined,
+        value_setup: valueSetup ? parseFloat(valueSetup) : undefined,
+        contract_months: parseInt(contractMonths, 10) || 12,
+        sold_by: soldBy || undefined,
+        sold_at: soldAt,
+        origin,
+        notes: notes || undefined,
+      });
+
+      setToast(true);
+      setTimeout(() => {
+        setToast(false);
+        navigate({ to: "/onboarding/$id", params: { id: result.onboarding.id } });
+      }, 1500);
+    } catch {
+      // error shown via isError
+    }
   }
 
   return (
@@ -107,6 +126,12 @@ function NovaVendaPage() {
             Registre uma venda fechada para iniciar o processo de onboarding.
           </p>
         </div>
+
+        {isError && (
+          <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Erro ao registrar a venda. Tente novamente.
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -134,7 +159,7 @@ function NovaVendaPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Buscar clínica ou CNPJ..."
+                  placeholder="Buscar clínica por nome ou CNPJ..."
                   value={clinicSearch}
                   onChange={(e) => setClinicSearch(e.target.value)}
                   className={cn(
@@ -160,9 +185,7 @@ function NovaVendaPage() {
                 {clinicSearch.trim() && filteredClinics.length === 0 && (
                   <div className="absolute z-10 mt-1 w-full rounded-lg border bg-card shadow-lg px-4 py-3 text-sm text-muted-foreground">
                     Nenhuma clínica encontrada.{" "}
-                    <Link to="/clientes" className="text-primary hover:underline">
-                      Criar nova clínica
-                    </Link>
+                    <span className="text-primary">Cadastre a clínica primeiro.</span>
                   </div>
                 )}
               </div>
@@ -292,10 +315,20 @@ function NovaVendaPage() {
             </Link>
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              disabled={isPending}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              <PlusCircle className="h-4 w-4" />
-              Registrar Venda
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <PlusCircle className="h-4 w-4" />
+                  Registrar Venda
+                </>
+              )}
             </button>
           </div>
 
@@ -304,7 +337,7 @@ function NovaVendaPage() {
 
       {toast && (
         <Toast
-          message="Venda registrada! Redirecionando para onboarding..."
+          message="Venda registrada! Abrindo onboarding..."
           onClose={() => setToast(false)}
         />
       )}

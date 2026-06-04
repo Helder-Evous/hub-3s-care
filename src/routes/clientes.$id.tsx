@@ -1,12 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { mockClientes, mockOnboardings } from "@/features/clientes/mock-data";
+import { useCliente, useClinicOnboarding, useClinicSales } from "@/features/clientes/queries";
 import { productLabel } from "@/features/clientes/types";
 import type { ClienteStatus, ProductType, StepStatus, OnboardingStatus } from "@/features/clientes/types";
 import { cn } from "@/shared/lib/utils";
 import {
   ChevronLeft, Pencil, MapPin, User, Phone, Mail, Building2,
-  Hash, CheckCircle2, Circle, Clock, XCircle, MinusCircle,
+  Hash, CheckCircle2, Circle, Clock, XCircle, MinusCircle, Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/clientes/$id")({
@@ -64,11 +64,28 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function fmtCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
+
 function ClienteDetailPage() {
   const { id } = Route.useParams();
 
-  const cliente = mockClientes.find((c) => c.id === id);
-  const onboarding = mockOnboardings.find((o) => o.clinic_id === id);
+  const { data: cliente, isLoading: loadingCliente } = useCliente(id);
+  const { data: onboarding, isLoading: loadingOnboarding } = useClinicOnboarding(id);
+  const { data: sales = [] } = useClinicSales(id);
+
+  const isLoading = loadingCliente || loadingOnboarding;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppShell>
+    );
+  }
 
   if (!cliente) {
     return (
@@ -86,15 +103,6 @@ function ClienteDetailPage() {
   const completedSteps = onboarding?.steps.filter((s) => s.status === "concluido").length ?? 0;
   const totalSteps = onboarding?.steps.length ?? 0;
   const progressPct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-
-  // Mock de vendas baseadas nos produtos do cliente
-  const mockSales = cliente.products.map((p, i) => ({
-    id: `sale-${i}`,
-    product: p,
-    sold_at: cliente.created_at,
-    sold_by: "Equipe Comercial",
-    value_monthly: p === "crm" ? 1200 : p === "trafego_pago" ? 2500 : 1800,
-  }));
 
   return (
     <AppShell>
@@ -153,13 +161,15 @@ function ClienteDetailPage() {
                 </div>
               </div>
             )}
-            <div className="flex items-start gap-2">
-              <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-              <div>
-                <div className="text-xs text-muted-foreground">Responsável</div>
-                <div className="text-sm font-medium">{cliente.responsible}</div>
+            {cliente.responsible && (
+              <div className="flex items-start gap-2">
+                <User className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div>
+                  <div className="text-xs text-muted-foreground">Responsável</div>
+                  <div className="text-sm font-medium">{cliente.responsible}</div>
+                </div>
               </div>
-            </div>
+            )}
             {cliente.phone && (
               <div className="flex items-start gap-2">
                 <Phone className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
@@ -193,29 +203,33 @@ function ClienteDetailPage() {
         {/* Produtos contratados */}
         <section className="rounded-xl border bg-card p-6 mb-6">
           <h2 className="text-base font-semibold mb-4">Produtos Contratados</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {cliente.products.map((p) => {
-              const isOnboarding = onboarding != null && onboarding.product === p && onboarding.status !== "concluido";
-              return (
-                <div key={p} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[p])}>
-                      {productLabel[p]}
+          {cliente.products.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum produto ativo.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {cliente.products.map((p) => {
+                const isOnboarding = onboarding != null && onboarding.product === p && onboarding.status !== "concluido";
+                return (
+                  <div key={p} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[p])}>
+                        {productLabel[p]}
+                      </span>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Desde {fmtDate(cliente.created_at)}
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "text-xs font-medium rounded-full px-2 py-0.5",
+                      isOnboarding ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
+                    )}>
+                      {isOnboarding ? "Onboarding" : "Ativo"}
                     </span>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Desde {fmtDate(cliente.created_at)}
-                    </p>
                   </div>
-                  <span className={cn(
-                    "text-xs font-medium rounded-full px-2 py-0.5",
-                    isOnboarding ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
-                  )}>
-                    {isOnboarding ? "Onboarding" : "Ativo"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* Onboarding ativo */}
@@ -282,36 +296,38 @@ function ClienteDetailPage() {
         {/* Histórico de vendas */}
         <section className="rounded-xl border bg-card p-6">
           <h2 className="text-base font-semibold mb-4">Histórico de Vendas</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-xs text-muted-foreground">
-                  <th className="text-left pb-2 pr-4">Produto</th>
-                  <th className="text-left pb-2 pr-4">Data</th>
-                  <th className="text-left pb-2 pr-4">Vendedor</th>
-                  <th className="text-right pb-2">Mensalidade</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockSales.map((sale) => (
-                  <tr key={sale.id} className="border-b last:border-0">
-                    <td className="py-2 pr-4">
-                      <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[sale.product])}>
-                        {productLabel[sale.product]}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4 text-muted-foreground">{fmtDate(sale.sold_at)}</td>
-                    <td className="py-2 pr-4 text-muted-foreground">{sale.sold_by}</td>
-                    <td className="py-2 text-right font-medium">
-                      {sale.value_monthly
-                        ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(sale.value_monthly)
-                        : "—"}
-                    </td>
+          {sales.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma venda registrada.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-xs text-muted-foreground">
+                    <th className="text-left pb-2 pr-4">Produto</th>
+                    <th className="text-left pb-2 pr-4">Data</th>
+                    <th className="text-left pb-2 pr-4">Vendedor</th>
+                    <th className="text-right pb-2">Mensalidade</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => (
+                    <tr key={sale.id} className="border-b last:border-0">
+                      <td className="py-2 pr-4">
+                        <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[sale.product as ProductType])}>
+                          {productLabel[sale.product as ProductType]}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-muted-foreground">{fmtDate(sale.sold_at)}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{sale.sold_by ?? "—"}</td>
+                      <td className="py-2 text-right font-medium">
+                        {sale.value_monthly != null ? fmtCurrency(sale.value_monthly) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
       </div>

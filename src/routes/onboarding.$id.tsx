@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { mockOnboardings } from "@/features/clientes/mock-data";
+import { useOnboarding } from "@/features/clientes/queries";
+import { useMarkStepDone } from "@/features/clientes/mutations";
 import { productLabel } from "@/features/clientes/types";
 import type { OnboardingStatus, StepStatus } from "@/features/clientes/types";
 import { cn } from "@/shared/lib/utils";
 import {
   ChevronLeft, CheckCircle2, Circle, XCircle, MinusCircle,
-  Clock, Check,
+  Clock, Check, Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding/$id")({
@@ -54,14 +54,20 @@ function fmtDate(iso: string) {
 function OnboardingDetailPage() {
   const { id } = Route.useParams();
 
-  // We use local state to simulate marking steps as done (mock only)
-  const source = mockOnboardings.find((o) => o.id === id);
+  const { data: onboarding, isLoading } = useOnboarding(id);
+  const { mutate: markDone, isPending: isMarking } = useMarkStepDone();
 
-  const [stepsState, setStepsState] = useState(
-    source ? source.steps.map((s) => ({ ...s })) : []
-  );
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </AppShell>
+    );
+  }
 
-  if (!source) {
+  if (!onboarding) {
     return (
       <AppShell>
         <div className="mx-auto max-w-4xl px-6 py-16 text-center">
@@ -74,19 +80,9 @@ function OnboardingDetailPage() {
     );
   }
 
-  const completed = stepsState.filter((s) => s.status === "concluido").length;
-  const total = stepsState.length;
+  const completed = onboarding.steps.filter((s) => s.status === "concluido").length;
+  const total = onboarding.steps.length;
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-
-  function markDone(stepId: string) {
-    setStepsState((prev) =>
-      prev.map((s) =>
-        s.id === stepId
-          ? { ...s, status: "concluido" as StepStatus, completed_at: new Date().toISOString() }
-          : s
-      )
-    );
-  }
 
   return (
     <AppShell>
@@ -100,18 +96,18 @@ function OnboardingDetailPage() {
         {/* Header */}
         <div className="mb-8">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[source.product])}>
-              {productLabel[source.product]}
+            <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[onboarding.product])}>
+              {productLabel[onboarding.product]}
             </span>
-            <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", onboardingStatusColors[source.status])}>
-              {onboardingStatusLabel[source.status]}
+            <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", onboardingStatusColors[onboarding.status])}>
+              {onboardingStatusLabel[onboarding.status]}
             </span>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">{source.clinic_name}</h1>
-          {source.sla_deadline && (
+          <h1 className="text-3xl font-semibold tracking-tight">{onboarding.clinic_name}</h1>
+          {onboarding.sla_deadline && (
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
-              Prazo: {fmtDate(source.sla_deadline)}
+              Prazo: {fmtDate(onboarding.sla_deadline)}
             </p>
           )}
         </div>
@@ -132,12 +128,12 @@ function OnboardingDetailPage() {
 
         {/* Lista de etapas */}
         <div className="rounded-xl border bg-card overflow-hidden">
-          {stepsState.map((step, idx) => (
+          {onboarding.steps.map((step, idx) => (
             <div
               key={step.id}
               className={cn(
                 "flex items-start gap-4 px-5 py-4",
-                idx < stepsState.length - 1 && "border-b"
+                idx < onboarding.steps.length - 1 && "border-b"
               )}
             >
               {/* Número + ícone */}
@@ -179,10 +175,16 @@ function OnboardingDetailPage() {
               {step.status === "em_andamento" && (
                 <button
                   type="button"
-                  onClick={() => markDone(step.id)}
-                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                  disabled={isMarking}
+                  onClick={() => markDone({ stepId: step.id, onboardingId: onboarding.id })}
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-green-50 border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50"
                 >
-                  <Check className="h-3.5 w-3.5" /> Marcar como concluída
+                  {isMarking ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                  Marcar como concluída
                 </button>
               )}
             </div>

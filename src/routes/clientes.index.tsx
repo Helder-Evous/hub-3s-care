@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { mockClientes } from "@/features/clientes/mock-data";
+import { useClientes } from "@/features/clientes/queries";
 import { productLabel } from "@/features/clientes/types";
 import type { ClienteStatus, ProductType } from "@/features/clientes/types";
 import { cn } from "@/shared/lib/utils";
-import { Search, PlusCircle, MapPin, User } from "lucide-react";
+import { Search, PlusCircle, MapPin, User, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/clientes/")({
   head: () => ({ meta: [{ title: "Clientes — Hub 3S" }] }),
@@ -36,8 +36,9 @@ const productColors: Record<ProductType, string> = {
 
 function ClientesPage() {
   const [search, setSearch] = useState("");
+  const { data: clientes = [], isLoading } = useClientes();
 
-  const filtered = mockClientes.filter((c) =>
+  const filtered = clientes.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.nome_fantasia ?? "").toLowerCase().includes(search.toLowerCase())
   );
@@ -50,7 +51,9 @@ function ClientesPage() {
           <div>
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Operações</div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">Clientes</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{mockClientes.length} clínicas cadastradas</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isLoading ? "Carregando..." : `${clientes.length} clínica${clientes.length !== 1 ? "s" : ""} cadastrada${clientes.length !== 1 ? "s" : ""}`}
+            </p>
           </div>
           <Link
             to="/comercial/nova-venda"
@@ -73,59 +76,84 @@ function ClientesPage() {
           />
         </div>
 
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
         {/* Grid de cards */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((cliente) => (
-            <Link
-              key={cliente.id}
-              to="/clientes/$id"
-              params={{ id: cliente.id }}
-              className="group rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
-                    {cliente.nome_fantasia ?? cliente.name}
-                  </h2>
-                  {cliente.nome_fantasia && (
-                    <p className="text-xs text-muted-foreground truncate">{cliente.name}</p>
+        {!isLoading && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {filtered.map((cliente) => (
+              <Link
+                key={cliente.id}
+                to="/clientes/$id"
+                params={{ id: cliente.id }}
+                className="group rounded-xl border bg-card p-5 shadow-sm transition-all hover:shadow-md hover:border-primary/40"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-base truncate group-hover:text-primary transition-colors">
+                      {cliente.nome_fantasia ?? cliente.name}
+                    </h2>
+                    {cliente.nome_fantasia && (
+                      <p className="text-xs text-muted-foreground truncate">{cliente.name}</p>
+                    )}
+                  </div>
+                  <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium", statusColors[cliente.status])}>
+                    {statusLabel[cliente.status]}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {(cliente.city || cliente.state) && (
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {[cliente.city, cliente.state].filter(Boolean).join(", ")}
+                    </span>
+                  )}
+                  {cliente.responsible && (
+                    <span className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {cliente.responsible}
+                    </span>
                   )}
                 </div>
-                <span className={cn("shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium", statusColors[cliente.status])}>
-                  {statusLabel[cliente.status]}
-                </span>
-              </div>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                {(cliente.city || cliente.state) && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {[cliente.city, cliente.state].filter(Boolean).join(", ")}
-                  </span>
+                {/* Badges de produtos */}
+                {cliente.products.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {cliente.products.map((p) => (
+                      <span key={p} className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[p])}>
+                        {productLabel[p]}
+                      </span>
+                    ))}
+                  </div>
                 )}
-                <span className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  {cliente.responsible}
-                </span>
-              </div>
+              </Link>
+            ))}
 
-              {/* Badges de produtos */}
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {cliente.products.map((p) => (
-                  <span key={p} className={cn("rounded-full px-2 py-0.5 text-xs font-medium", productColors[p])}>
-                    {productLabel[p]}
-                  </span>
-                ))}
+            {!isLoading && filtered.length === 0 && clientes.length === 0 && (
+              <div className="col-span-2 py-16 text-center">
+                <p className="text-muted-foreground text-sm mb-3">Nenhuma clínica cadastrada ainda.</p>
+                <Link
+                  to="/comercial/nova-venda"
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <PlusCircle className="h-4 w-4" /> Registrar primeira venda
+                </Link>
               </div>
-            </Link>
-          ))}
+            )}
 
-          {filtered.length === 0 && (
-            <div className="col-span-2 py-16 text-center text-muted-foreground text-sm">
-              Nenhum cliente encontrado para "{search}".
-            </div>
-          )}
-        </div>
+            {!isLoading && filtered.length === 0 && clientes.length > 0 && (
+              <div className="col-span-2 py-16 text-center text-muted-foreground text-sm">
+                Nenhum cliente encontrado para "{search}".
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AppShell>
   );
