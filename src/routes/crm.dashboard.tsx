@@ -3,7 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge, StatusDot } from "@/components/StatusBadge";
 import { Building2, Radio, AlertTriangle, AlertOctagon, ShieldCheck, ShieldAlert, Activity } from "lucide-react";
-import { clinics, channels, contingency, alerts } from "@/lib/mock-data";
+import { useClinics, useChannels, useContingency, useAlerts } from "@/lib/queries";
 import { clinicSummary } from "@/lib/calculations";
 
 export const Route = createFileRoute("/crm/dashboard")({
@@ -12,6 +12,34 @@ export const Route = createFileRoute("/crm/dashboard")({
 });
 
 function Dashboard() {
+  const { data: clinics = [], isLoading: loadingClinics } = useClinics();
+  const { data: channels = [], isLoading: loadingChannels } = useChannels();
+  const { data: contingency = [], isLoading: loadingContingency } = useContingency();
+  const { data: alerts = [], isLoading: loadingAlerts } = useAlerts();
+
+  const isLoading = loadingClinics || loadingChannels || loadingContingency || loadingAlerts;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (clinics.length === 0) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col items-center justify-center min-h-64 gap-3 text-center">
+          <Building2 className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground">Nenhum dado encontrado. Adicione clínicas no sistema.</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   const summaries = clinics.map((c) =>
     clinicSummary(c, channels.filter((ch) => ch.clinic_id === c.id), contingency.find((x) => x.clinic_id === c.id)),
   );
@@ -22,7 +50,7 @@ function Dashboard() {
   const critical = channels.filter((c) => ["critico", "bloqueado", "desconectado"].includes(c.status)).length;
   const reserves = channels.filter((c) => c.channel_type === "numero_reserva" && c.status === "livre").length;
   const noContingency = summaries.filter((s) => s.contingency < 50).length;
-  const avgComm = Math.round(summaries.reduce((a, s) => a + s.communicability, 0) / total);
+  const avgComm = total > 0 ? Math.round(summaries.reduce((a, s) => a + s.communicability, 0) / total) : 0;
   const openAlerts = alerts.filter((a) => a.status !== "resolvido").length;
 
   return (

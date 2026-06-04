@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
-import { clinics, contingency } from "@/lib/mock-data";
+import { useClinics, useContingency } from "@/lib/queries";
 import { contingencyScore, contingencyClass } from "@/lib/calculations";
+import { ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/crm/contingencia")({
   head: () => ({ meta: [{ title: "Contingência — Chips/Canais" }] }),
@@ -18,6 +19,31 @@ const items = [
 ] as const;
 
 function ContingencyPage() {
+  const { data: clinics = [], isLoading: loadingClinics } = useClinics();
+  const { data: contingency = [], isLoading: loadingContingency } = useContingency();
+  const isLoading = loadingClinics || loadingContingency;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (clinics.length === 0) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col items-center justify-center min-h-64 gap-3 text-center">
+          <ShieldAlert className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground">Nenhum dado encontrado. Adicione clínicas no sistema.</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   const rows = clinics.map((c) => {
     const cont = contingency.find((x) => x.clinic_id === c.id);
     const score = cont ? contingencyScore(cont) : 0;

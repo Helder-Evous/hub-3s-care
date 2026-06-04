@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
-import { alerts, clinics, channels } from "@/lib/mock-data";
+import { useAlerts, useClinics, useChannels } from "@/lib/queries";
 import { severityLabel, alertStatusLabel, timeAgo } from "@/lib/labels";
+import { AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/crm/alertas")({
   head: () => ({ meta: [{ title: "Central de Alertas — Chips/Canais" }] }),
@@ -14,8 +15,23 @@ type Filter = "todos" | "aberto" | "em_tratamento" | "resolvido";
 
 function AlertsPage() {
   const [filter, setFilter] = useState<Filter>("aberto");
+  const { data: alerts = [], isLoading: loadingAlerts } = useAlerts();
+  const { data: clinics = [], isLoading: loadingClinics } = useClinics();
+  const { data: channels = [], isLoading: loadingChannels } = useChannels();
+  const isLoading = loadingAlerts || loadingClinics || loadingChannels;
+
   const filtered = alerts.filter((a) => filter === "todos" || a.status === filter)
     .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell>

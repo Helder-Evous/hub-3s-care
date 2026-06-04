@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
-import { channels, clinics } from "@/lib/mock-data";
+import { useChannels, useClinics } from "@/lib/queries";
 import { channelStatusLabel, channelTypeLabel, dataOriginLabel, timeAgo } from "@/lib/labels";
+import { Radio } from "lucide-react";
 
 export const Route = createFileRoute("/crm/canais")({
   head: () => ({ meta: [{ title: "Canais — Chips/Canais" }] }),
@@ -10,6 +11,31 @@ export const Route = createFileRoute("/crm/canais")({
 });
 
 function ChannelsList() {
+  const { data: channels = [], isLoading: loadingChannels } = useChannels();
+  const { data: clinics = [], isLoading: loadingClinics } = useClinics();
+  const isLoading = loadingChannels || loadingClinics;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (channels.length === 0) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col items-center justify-center min-h-64 gap-3 text-center">
+          <Radio className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground">Nenhum dado encontrado. Adicione clínicas no sistema.</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="mx-auto max-w-7xl px-6 py-8">

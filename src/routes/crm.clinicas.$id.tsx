@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge, StatusDot } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
-import { clinics, channels, contingency, alerts, templates, apiVolumes } from "@/lib/mock-data";
+import { useClinic, useChannels, useContingency, useAlerts, useTemplates, useApiVolumes } from "@/lib/queries";
 import { clinicSummary, contingencyScore, contingencyClass } from "@/lib/calculations";
 import { channelTypeLabel, channelStatusLabel, dataOriginLabel, timeAgo, severityLabel, alertStatusLabel } from "@/lib/labels";
 import { ChevronLeft, ShieldCheck, Activity, Radio, FileText, Send } from "lucide-react";
@@ -18,12 +18,26 @@ export const Route = createFileRoute("/crm/clinicas/$id")({
 
 function ClinicDetail() {
   const { id } = Route.useParams();
-  const clinic = clinics.find((c) => c.id === id);
+  const { data: clinic, isLoading: loadingClinic } = useClinic(id);
+  const { data: myChannels = [], isLoading: loadingChannels } = useChannels(id);
+  const { data: contingency = [], isLoading: loadingContingency } = useContingency(id);
+  const { data: clinicAlerts = [], isLoading: loadingAlerts } = useAlerts(id);
+  const isLoading = loadingClinic || loadingChannels || loadingContingency || loadingAlerts;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
+
   if (!clinic) throw notFound();
-  const myChannels = channels.filter((c) => c.clinic_id === id);
+
   const cont = contingency.find((x) => x.clinic_id === id);
   const s = clinicSummary(clinic, myChannels, cont);
-  const clinicAlerts = alerts.filter((a) => a.clinic_id === id);
 
   const contingencyItems: { label: string; ok: boolean }[] = cont
     ? [
@@ -178,6 +192,8 @@ function Field({ label, value, tone = "muted" }: { label: string; value: React.R
 }
 
 function ClinicTemplatesAndVolume({ clinicId }: { clinicId: string }) {
+  const { data: templates = [] } = useTemplates(clinicId);
+  const { data: apiVolumes = [] } = useApiVolumes(clinicId);
   const summary = clinicTemplateSummary(clinicId, templates);
   const apiVol = clinicVolumeForApi(clinicId, apiVolumes);
 
