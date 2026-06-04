@@ -3,8 +3,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { onboardingTemplates } from "./onboarding-templates";
 import type { ProductType } from "./types";
 
+export interface NewClinicData {
+  name: string;
+  responsible: string;
+  phone: string;
+  city: string;
+  state: string;
+  cnpj?: string;
+  razao_social?: string;
+  email?: string;
+  address?: string;
+}
+
 export interface RegisterSaleInput {
-  clinic_id: string;
+  /** UUID de clínica existente. Mutuamente exclusivo com newClinic. */
+  clinic_id?: string;
+  /** Dados para criar nova clínica antes de registrar a venda. */
+  newClinic?: NewClinicData;
   product: ProductType;
   value_monthly?: number;
   value_setup?: number;
@@ -20,11 +35,37 @@ export function useRegisterSale() {
 
   return useMutation({
     mutationFn: async (input: RegisterSaleInput) => {
-      // 1. Insert sale record
+      // 0. Criar clínica se não existir ainda
+      let clinicId = input.clinic_id;
+      if (!clinicId) {
+        if (!input.newClinic) throw new Error("Clínica não identificada");
+
+        const { data: created, error: clinicErr } = await supabase
+          .from("clinics")
+          .insert({
+            name: input.newClinic.name,
+            responsible: input.newClinic.responsible || null,
+            phone: input.newClinic.phone || null,
+            city: input.newClinic.city || null,
+            state: input.newClinic.state || null,
+            cnpj: input.newClinic.cnpj || null,
+            razao_social: input.newClinic.razao_social || null,
+            email: input.newClinic.email || null,
+            address: input.newClinic.address || null,
+            status: "ativa",
+          })
+          .select()
+          .single();
+
+        if (clinicErr || !created) throw clinicErr ?? new Error("Falha ao criar clínica");
+        clinicId = created.id;
+      }
+
+      // 1. Registrar venda
       const { data: sale, error: saleErr } = await supabase
         .from("sales")
         .insert({
-          clinic_id: input.clinic_id,
+          clinic_id: clinicId,
           product: input.product,
           value_monthly: input.value_monthly ?? null,
           value_setup: input.value_setup ?? 0,
@@ -39,12 +80,12 @@ export function useRegisterSale() {
 
       if (saleErr || !sale) throw saleErr ?? new Error("Falha ao registrar venda");
 
-      // 2. Activate product for clinic (upsert handles repeated sale of same product)
+      // 2. Ativar produto para a clínica
       const { error: cpErr } = await supabase
         .from("clinic_products")
         .upsert(
           {
-            clinic_id: input.clinic_id,
+            clinic_id: clinicId,
             product: input.product,
             sale_id: sale.id,
             active: true,
@@ -55,7 +96,7 @@ export function useRegisterSale() {
 
       if (cpErr) throw cpErr;
 
-      // 3. Create onboarding — SLA calculated from total step hours (assuming 8h workday)
+      // 3. Criar onboarding — SLA calculado via horas totais dos steps (base 8h/dia)
       const stepTemplates = onboardingTemplates[input.product];
       const totalWorkHours = stepTemplates.reduce((sum, s) => sum + s.sla_hours, 0);
       const slaDeadline = new Date();
@@ -64,7 +105,7 @@ export function useRegisterSale() {
       const { data: onboarding, error: obErr } = await supabase
         .from("onboardings")
         .insert({
-          clinic_id: input.clinic_id,
+          clinic_id: clinicId,
           sale_id: sale.id,
           product: input.product,
           status: "em_execucao",
@@ -75,13 +116,13 @@ export function useRegisterSale() {
 
       if (obErr || !onboarding) throw obErr ?? new Error("Falha ao criar onboarding");
 
-      // 4. Insert all steps from template; first step starts immediately
+      // 4. Inserir etapas do template — primeira etapa já inicia em_andamento
       const stepsPayload = stepTemplates.map((s) => ({
         onboarding_id: onboarding.id,
         step_key: s.step_key,
         title: s.title,
         description: s.description ?? null,
-        status: s.order_index === 1 ? "em_andamento" : ("pendente" as const),
+        status: s.order_index === 1 ? ("em_andamento" as const) : ("pendente" as const),
         order_index: s.order_index,
         sla_hours: s.sla_hours,
       }));
@@ -92,7 +133,7 @@ export function useRegisterSale() {
 
       if (stepsErr) throw stepsErr;
 
-      return { sale, onboarding };
+      return { sale, onboarding, clinicId };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["clientes"] });
@@ -106,7 +147,7 @@ export function useMarkStepDone() {
 
   return useMutation({
     mutationFn: async ({ stepId, onboardingId }: { stepId: string; onboardingId: string }) => {
-      // Mark this step as concluded
+      // Marca a etapa como concluída
       const { error: stepErr } = await supabase
         .from("onboarding_steps")
         .update({ status: "concluido", completed_at: new Date().toISOString() })
@@ -114,7 +155,7 @@ export function useMarkStepDone() {
 
       if (stepErr) throw stepErr;
 
-      // Find the next pending step (lowest order_index)
+      // Busca a próxima etapa pendente (menor order_index)
       const { data: pending } = await supabase
         .from("onboarding_steps")
         .select("id")
@@ -131,7 +172,7 @@ export function useMarkStepDone() {
           .update({ status: "em_andamento", started_at: new Date().toISOString() })
           .eq("id", nextStep.id);
       } else {
-        // All steps done — complete the onboarding
+        // Todas as etapas concluídas — fecha o onboarding
         await supabase
           .from("onboardings")
           .update({ status: "concluido", completed_at: new Date().toISOString() })

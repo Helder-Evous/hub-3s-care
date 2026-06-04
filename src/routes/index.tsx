@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { mockClientes, mockOnboardings } from "@/features/clientes/mock-data";
+import { useClientes, useOnboardings } from "@/features/clientes/queries";
 import { ArrowRight, Radio, TrendingUp, Users, ClipboardList, BookOpen, GraduationCap } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -53,10 +53,12 @@ const modules = [
 ];
 
 function HubHome() {
-  const activeOnboardings = mockOnboardings.filter(
+  const { data: clientes = [] } = useClientes();
+  const { data: allOnboardings = [] } = useOnboardings();
+  const activeOnboardings = allOnboardings.filter(
     (o) => o.status !== "concluido" && o.status !== "cancelado"
   );
-  const activeClientes = mockClientes.filter((c) => c.status === "ativo");
+  const activeClientes = clientes.filter((c) => c.status === "ativo");
 
   return (
     <AppShell>
