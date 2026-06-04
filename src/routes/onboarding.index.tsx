@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { mockOnboardings } from "@/features/clientes/mock-data";
+import { useOnboardings } from "@/features/clientes/queries";
 import { productLabel } from "@/features/clientes/types";
 import type { OnboardingStatus } from "@/features/clientes/types";
 import { cn } from "@/shared/lib/utils";
-import { ClipboardList, ArrowRight, Clock } from "lucide-react";
+import { ClipboardList, ArrowRight, Clock, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/onboarding/")({
   head: () => ({ meta: [{ title: "Onboarding — Hub 3S" }] }),
@@ -40,7 +40,9 @@ function fmtDate(iso: string) {
 }
 
 function OnboardingListPage() {
-  const activeOnboardings = mockOnboardings.filter(
+  const { data: allOnboardings = [], isLoading } = useOnboardings();
+
+  const activeOnboardings = allOnboardings.filter(
     (o) => o.status !== "concluido" && o.status !== "cancelado"
   );
 
@@ -53,7 +55,9 @@ function OnboardingListPage() {
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Operações</div>
             <h1 className="mt-1 text-3xl font-semibold tracking-tight">Onboarding</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {activeOnboardings.length} onboarding{activeOnboardings.length !== 1 ? "s" : ""} em andamento
+              {isLoading
+                ? "Carregando..."
+                : `${activeOnboardings.length} onboarding${activeOnboardings.length !== 1 ? "s" : ""} em andamento`}
             </p>
           </div>
           <Link
@@ -65,8 +69,15 @@ function OnboardingListPage() {
           </Link>
         </div>
 
-        {/* Lista */}
-        {activeOnboardings.length === 0 ? (
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {/* Vazio */}
+        {!isLoading && activeOnboardings.length === 0 && (
           <div className="rounded-xl border bg-card p-16 text-center">
             <ClipboardList className="mx-auto h-10 w-10 text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground text-sm">Nenhum onboarding ativo no momento.</p>
@@ -77,7 +88,10 @@ function OnboardingListPage() {
               Registrar nova venda
             </Link>
           </div>
-        ) : (
+        )}
+
+        {/* Lista */}
+        {!isLoading && activeOnboardings.length > 0 && (
           <div className="space-y-4">
             {activeOnboardings.map((ob) => {
               const completed = ob.steps.filter((s) => s.status === "concluido").length;

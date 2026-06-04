@@ -19,6 +19,11 @@ dist-ssr
 # Claude Code
 .claude/
 
+# Variáveis de ambiente — nunca versionar valores reais
+.env
+.env.local
+.env.*.local
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
