@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge, StatusDot } from "@/components/StatusBadge";
-import { clinics, channels, contingency } from "@/lib/mock-data";
+import { useClinics, useChannels, useContingency } from "@/lib/queries";
 import { clinicSummary } from "@/lib/calculations";
 
 export const Route = createFileRoute("/crm/clinicas/")({
@@ -10,6 +10,31 @@ export const Route = createFileRoute("/crm/clinicas/")({
 });
 
 function ClinicsList() {
+  const { data: clinics = [], isLoading: loadingClinics } = useClinics();
+  const { data: channels = [], isLoading: loadingChannels } = useChannels();
+  const { data: contingency = [], isLoading: loadingContingency } = useContingency();
+  const isLoading = loadingClinics || loadingChannels || loadingContingency;
+
+  if (isLoading) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8">
+          <div className="animate-pulse bg-muted rounded h-32 w-full" />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (clinics.length === 0) {
+    return (
+      <AppShell>
+        <div className="mx-auto max-w-7xl px-6 py-8 flex flex-col items-center justify-center min-h-64 gap-3 text-center">
+          <p className="text-muted-foreground">Nenhum dado encontrado. Adicione clínicas no sistema.</p>
+        </div>
+      </AppShell>
+    );
+  }
+
   const summaries = clinics.map((c) =>
     clinicSummary(c, channels.filter((ch) => ch.clinic_id === c.id), contingency.find((x) => x.clinic_id === c.id)),
   );
