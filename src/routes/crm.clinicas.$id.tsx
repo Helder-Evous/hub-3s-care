@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge, StatusDot } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
-import { clinics, channels, contingency, alerts } from "@/lib/mock-data";
+import { clinics, channels, contingency, alerts, templates, apiVolumes } from "@/lib/mock-data";
 import { clinicSummary, contingencyScore, contingencyClass } from "@/lib/calculations";
 import { channelTypeLabel, channelStatusLabel, dataOriginLabel, timeAgo, severityLabel, alertStatusLabel } from "@/lib/labels";
 import { ChevronLeft, ShieldCheck, Activity, Radio, FileText, Send } from "lucide-react";
@@ -178,8 +178,8 @@ function Field({ label, value, tone = "muted" }: { label: string; value: React.R
 }
 
 function ClinicTemplatesAndVolume({ clinicId }: { clinicId: string }) {
-  const summary = clinicTemplateSummary(clinicId);
-  const apiVol = clinicVolumeForApi(clinicId);
+  const summary = clinicTemplateSummary(clinicId, templates);
+  const apiVol = clinicVolumeForApi(clinicId, apiVolumes);
 
   return (
     <section className="mt-10 grid gap-6 md:grid-cols-2">
