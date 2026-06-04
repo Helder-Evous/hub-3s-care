@@ -157,11 +157,26 @@ ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.charges ENABLE ROW LEVEL SECURITY;
 
 -- Políticas simples: autenticado lê e escreve tudo (MVP interno)
-CREATE POLICY "authenticated full access" ON public.sales FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.clinic_products FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.onboardings FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.onboarding_steps FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.pending_approvals FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.ai_audit_log FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.contracts FOR ALL USING (auth.uid() IS NOT NULL);
-CREATE POLICY "authenticated full access" ON public.charges FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "sales: authenticated access" ON public.sales FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "clinic_products: authenticated access" ON public.clinic_products FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "onboardings: authenticated access" ON public.onboardings FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "onboarding_steps: authenticated access" ON public.onboarding_steps FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "pending_approvals: authenticated access" ON public.pending_approvals FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "ai_audit_log: authenticated access" ON public.ai_audit_log FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "contracts: authenticated access" ON public.contracts FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "charges: authenticated access" ON public.charges FOR ALL USING (auth.uid() IS NOT NULL);
+
+-- Índices de performance para foreign keys das novas tabelas
+CREATE INDEX idx_sales_clinic_id            ON public.sales(clinic_id);
+CREATE INDEX idx_clinic_products_clinic_id  ON public.clinic_products(clinic_id);
+CREATE INDEX idx_clinic_products_product    ON public.clinic_products(product);
+CREATE INDEX idx_onboardings_clinic_id      ON public.onboardings(clinic_id);
+CREATE INDEX idx_onboardings_status         ON public.onboardings(status);
+CREATE INDEX idx_onboarding_steps_id        ON public.onboarding_steps(onboarding_id);
+CREATE INDEX idx_onboarding_steps_status    ON public.onboarding_steps(status);
+CREATE INDEX idx_contracts_clinic_id        ON public.contracts(clinic_id);
+CREATE INDEX idx_charges_contract_id        ON public.charges(contract_id);
+CREATE INDEX idx_charges_clinic_id          ON public.charges(clinic_id);
+CREATE INDEX idx_charges_due_date           ON public.charges(due_date);
+CREATE INDEX idx_pending_approvals_status   ON public.pending_approvals(status);
+CREATE INDEX idx_ai_audit_log_entity        ON public.ai_audit_log(entity, entity_id);

@@ -195,7 +195,7 @@ function ClienteDetailPage() {
           <h2 className="text-base font-semibold mb-4">Produtos Contratados</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {cliente.products.map((p) => {
-              const isOnboarding = onboarding?.product === p && onboarding.status !== "concluido";
+              const isOnboarding = onboarding != null && onboarding.product === p && onboarding.status !== "concluido";
               return (
                 <div key={p} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
