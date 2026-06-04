@@ -1,0 +1,67 @@
+import type { Cliente, Onboarding } from './types';
+
+export const mockClientes: Cliente[] = [
+  {
+    id: 'cl1',
+    name: 'Clínica Sorriso Bonito',
+    nome_fantasia: 'Sorriso Bonito',
+    razao_social: 'Sorriso Bonito Odontologia LTDA',
+    cnpj: '12.345.678/0001-90',
+    responsible: 'Dr. Carlos Mendes',
+    phone: '(11) 99999-1111',
+    email: 'contato@sorrisobonito.com.br',
+    city: 'São Paulo',
+    state: 'SP',
+    status: 'ativo',
+    products: ['crm', 'trafego_pago'],
+    created_at: '2026-01-15T10:00:00Z',
+  },
+  {
+    id: 'cl2',
+    name: 'OdontoVida',
+    nome_fantasia: 'OdontoVida',
+    responsible: 'Dra. Ana Lima',
+    phone: '(21) 98888-2222',
+    city: 'Rio de Janeiro',
+    state: 'RJ',
+    status: 'onboarding',
+    products: ['crm'],
+    created_at: '2026-05-20T10:00:00Z',
+  },
+  {
+    id: 'cl3',
+    name: 'Clínica BemStar',
+    nome_fantasia: 'BemStar Odontologia',
+    responsible: 'Dr. Marcos Silva',
+    phone: '(31) 97777-3333',
+    city: 'Belo Horizonte',
+    state: 'MG',
+    status: 'ativo',
+    products: ['gestao_consultoria'],
+    created_at: '2025-11-10T10:00:00Z',
+  },
+];
+
+export const mockOnboardings: Onboarding[] = [
+  {
+    id: 'ob1',
+    clinic_id: 'cl2',
+    clinic_name: 'OdontoVida',
+    product: 'crm',
+    status: 'em_execucao',
+    sla_deadline: '2026-06-20T10:00:00Z',
+    created_at: '2026-05-20T10:00:00Z',
+    steps: [
+      { id: 's1', step_key: 'coleta_dados', title: 'Coleta de dados da clínica', order_index: 1, sla_hours: 48, status: 'concluido', completed_at: '2026-05-22T14:00:00Z' },
+      { id: 's2', step_key: 'cadastro_completo', title: 'Cadastro mestre completo', order_index: 2, sla_hours: 24, status: 'concluido', completed_at: '2026-05-23T09:00:00Z' },
+      { id: 's3', step_key: 'assinatura_contrato', title: 'Assinatura do contrato', order_index: 3, sla_hours: 48, status: 'em_andamento' },
+      { id: 's4', step_key: 'setup_financeiro', title: 'Setup financeiro confirmado', order_index: 4, sla_hours: 24, status: 'pendente' },
+      { id: 's5', step_key: 'criar_canal', title: 'Criação do canal WhatsApp', order_index: 5, sla_hours: 24, status: 'pendente' },
+      { id: 's6', step_key: 'api_meta', title: 'Configuração API Oficial Meta', order_index: 6, sla_hours: 72, status: 'pendente' },
+      { id: 's7', step_key: 'importar_base', title: 'Importação da base de pacientes', order_index: 7, sla_hours: 48, status: 'pendente' },
+      { id: 's8', step_key: 'templates_aprovados', title: 'Templates Meta aprovados', order_index: 8, sla_hours: 120, status: 'pendente' },
+      { id: 's9', step_key: 'disparo_teste', title: 'Disparo de teste validado', order_index: 9, sla_hours: 24, status: 'pendente' },
+      { id: 's10', step_key: 'treinamento', title: 'Treinamento da equipe', order_index: 10, sla_hours: 48, status: 'pendente' },
+    ],
+  },
+];

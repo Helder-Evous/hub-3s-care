@@ -1,0 +1,167 @@
+-- Expandir clinics com campos faltantes
+ALTER TABLE public.clinics
+  ADD COLUMN IF NOT EXISTS razao_social    TEXT,
+  ADD COLUMN IF NOT EXISTS nome_fantasia   TEXT,
+  ADD COLUMN IF NOT EXISTS cnpj            TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS email           TEXT,
+  ADD COLUMN IF NOT EXISTS address         TEXT,
+  ADD COLUMN IF NOT EXISTS cep             TEXT,
+  ADD COLUMN IF NOT EXISTS website         TEXT,
+  ADD COLUMN IF NOT EXISTS segment         TEXT DEFAULT 'odontologia',
+  ADD COLUMN IF NOT EXISTS external_ref    TEXT; -- ID em plataforma externa futura
+
+-- Vendas fechadas (ponto de entrada pós-venda)
+CREATE TYPE public.product_type AS ENUM (
+  'crm', 'trafego_pago', 'trafego_com_agendamento',
+  'gestao_consultoria', 'projeto_escola'
+);
+
+CREATE TABLE public.sales (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id        UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  product          public.product_type NOT NULL,
+  value_monthly    NUMERIC(10,2),
+  value_setup      NUMERIC(10,2) DEFAULT 0,
+  contract_months  INT DEFAULT 12,
+  sold_by          TEXT,
+  sold_at          DATE NOT NULL DEFAULT CURRENT_DATE,
+  origin           TEXT NOT NULL DEFAULT 'manual',
+  external_ref     TEXT,
+  notes            TEXT,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Produtos ativos por clínica (M:N)
+CREATE TABLE public.clinic_products (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id   UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  product     public.product_type NOT NULL,
+  sale_id     UUID REFERENCES public.sales(id),
+  active      BOOLEAN NOT NULL DEFAULT true,
+  started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ended_at    TIMESTAMPTZ,
+  UNIQUE(clinic_id, product)
+);
+
+-- Onboarding por produto
+CREATE TYPE public.onboarding_status AS ENUM (
+  'aguardando_dados', 'em_execucao', 'pausado', 'concluido', 'cancelado'
+);
+
+CREATE TABLE public.onboardings (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id       UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  sale_id         UUID REFERENCES public.sales(id),
+  product         public.product_type NOT NULL,
+  status          public.onboarding_status NOT NULL DEFAULT 'aguardando_dados',
+  responsible_id  UUID REFERENCES public.hub_users(id),
+  sla_deadline    TIMESTAMPTZ,
+  completed_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Etapas do onboarding
+CREATE TYPE public.step_status AS ENUM (
+  'pendente', 'em_andamento', 'concluido', 'bloqueado', 'pulado'
+);
+
+CREATE TABLE public.onboarding_steps (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  onboarding_id   UUID NOT NULL REFERENCES public.onboardings(id) ON DELETE CASCADE,
+  step_key        TEXT NOT NULL,
+  title           TEXT NOT NULL,
+  description     TEXT,
+  status          public.step_status NOT NULL DEFAULT 'pendente',
+  responsible_id  UUID REFERENCES public.hub_users(id),
+  order_index     INT NOT NULL,
+  sla_hours       INT,
+  started_at      TIMESTAMPTZ,
+  due_at          TIMESTAMPTZ,
+  completed_at    TIMESTAMPTZ,
+  notes           TEXT
+);
+
+-- Aprovações pendentes
+CREATE TABLE public.pending_approvals (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type          TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  payload       JSONB NOT NULL DEFAULT '{}',
+  status        TEXT NOT NULL DEFAULT 'pendente',
+  assigned_to   UUID REFERENCES public.hub_users(id),
+  reviewed_by   UUID REFERENCES public.hub_users(id),
+  reviewed_at   TIMESTAMPTZ,
+  review_notes  TEXT,
+  expires_at    TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Auditoria de IA
+CREATE TABLE public.ai_audit_log (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity         TEXT NOT NULL,
+  entity_id      UUID,
+  action         TEXT NOT NULL,
+  description    TEXT NOT NULL,
+  data_before    JSONB,
+  data_after     JSONB,
+  triggered_by   TEXT NOT NULL DEFAULT 'manual',
+  human_approved BOOLEAN,
+  approved_by    UUID REFERENCES public.hub_users(id),
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Contratos
+CREATE TABLE public.contracts (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id        UUID NOT NULL REFERENCES public.clinics(id),
+  sale_id          UUID REFERENCES public.sales(id),
+  product          public.product_type NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'rascunho',
+  value_monthly    NUMERIC(10,2) NOT NULL,
+  value_setup      NUMERIC(10,2) NOT NULL DEFAULT 0,
+  contract_months  INT NOT NULL,
+  start_date       DATE,
+  end_date         DATE,
+  pdf_url          TEXT,
+  approved_by      UUID REFERENCES public.hub_users(id),
+  approved_at      TIMESTAMPTZ,
+  signed_at        TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Cobranças
+CREATE TABLE public.charges (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  contract_id     UUID NOT NULL REFERENCES public.contracts(id),
+  clinic_id       UUID NOT NULL REFERENCES public.clinics(id),
+  type            TEXT NOT NULL DEFAULT 'mensalidade',
+  amount          NUMERIC(10,2) NOT NULL,
+  due_date        DATE NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pendente',
+  paid_at         DATE,
+  external_id     TEXT,
+  confirmed_by    UUID REFERENCES public.hub_users(id),
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- RLS básico
+ALTER TABLE public.sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clinic_products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.onboardings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.onboarding_steps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pending_approvals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ai_audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.charges ENABLE ROW LEVEL SECURITY;
+
+-- Políticas simples: autenticado lê e escreve tudo (MVP interno)
+CREATE POLICY "authenticated full access" ON public.sales FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.clinic_products FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.onboardings FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.onboarding_steps FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.pending_approvals FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.ai_audit_log FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.contracts FOR ALL USING (auth.uid() IS NOT NULL);
+CREATE POLICY "authenticated full access" ON public.charges FOR ALL USING (auth.uid() IS NOT NULL);

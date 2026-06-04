@@ -2,6 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, Radio, Bell, Tv, ShieldCheck,
   Sparkles, FileText, BarChart3, Layers, LogOut, ChevronDown,
+  ClipboardList, PlusCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -13,16 +14,24 @@ type NavItem =
 
 const nav: NavItem[] = [
   { to: "/", label: "Hub 3S", icon: Sparkles, end: true },
-  { to: "/crm", label: "Produto CRM", icon: LayoutDashboard, end: true },
-  { section: "Chips / Canais" },
+
+  { section: "Operações" },
+  { to: "/clientes", label: "Clientes", icon: Building2 },
+  { to: "/onboarding", label: "Onboarding", icon: ClipboardList },
+  { to: "/comercial/nova-venda", label: "Nova Venda", icon: PlusCircle },
+
+  { section: "Produto CRM" },
+  { to: "/crm", label: "Visão Geral CRM", icon: LayoutDashboard, end: true },
+  { section: "Chips e Canais" },
   { to: "/crm/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/crm/clinicas", label: "Clínicas", icon: Building2 },
+  { to: "/crm/clinicas", label: "Clínicas CRM", icon: Building2 },
   { to: "/crm/canais", label: "Canais", icon: Radio },
   { to: "/crm/templates", label: "Templates Meta", icon: FileText },
   { to: "/crm/volume", label: "Volume API", icon: BarChart3 },
   { to: "/crm/contingencia", label: "Contingência", icon: ShieldCheck },
   { to: "/crm/alertas", label: "Alertas", icon: Bell },
   { to: "/tv", label: "Modo TV", icon: Tv },
+
   { section: "Sistema" },
   { to: "/hub-builder", label: "Centro de Construção", icon: Layers },
 ];

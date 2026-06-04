@@ -22,6 +22,11 @@ import { Route as CrmAlertasRouteImport } from './routes/crm.alertas'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CrmClinicasIndexRouteImport } from './routes/crm.clinicas.index'
 import { Route as CrmClinicasIdRouteImport } from './routes/crm.clinicas.$id'
+import { Route as ClientesIndexRouteImport } from './routes/clientes.index'
+import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
+import { Route as ComercialNovaVendaRouteImport } from './routes/comercial.nova-venda'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingIdRouteImport } from './routes/onboarding.$id'
 
 const TvRoute = TvRouteImport.update({
   id: '/tv',
@@ -88,6 +93,31 @@ const CrmClinicasIdRoute = CrmClinicasIdRouteImport.update({
   path: '/crm/clinicas/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClientesIndexRoute = ClientesIndexRouteImport.update({
+  id: '/clientes/',
+  path: '/clientes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientesIdRoute = ClientesIdRouteImport.update({
+  id: '/clientes/$id',
+  path: '/clientes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComercialNovaVendaRoute = ComercialNovaVendaRouteImport.update({
+  id: '/comercial/nova-venda',
+  path: '/comercial/nova-venda',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIdRoute = OnboardingIdRouteImport.update({
+  id: '/onboarding/$id',
+  path: '/onboarding/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +133,11 @@ export interface FileRoutesByFullPath {
   '/crm/': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
+  '/clientes/': typeof ClientesIndexRoute
+  '/clientes/$id': typeof ClientesIdRoute
+  '/comercial/nova-venda': typeof ComercialNovaVendaRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/onboarding/$id': typeof OnboardingIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -118,6 +153,11 @@ export interface FileRoutesByTo {
   '/crm': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas': typeof CrmClinicasIndexRoute
+  '/clientes': typeof ClientesIndexRoute
+  '/clientes/$id': typeof ClientesIdRoute
+  '/comercial/nova-venda': typeof ComercialNovaVendaRoute
+  '/onboarding': typeof OnboardingIndexRoute
+  '/onboarding/$id': typeof OnboardingIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,6 +174,11 @@ export interface FileRoutesById {
   '/crm/': typeof CrmIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
+  '/clientes/': typeof ClientesIndexRoute
+  '/clientes/$id': typeof ClientesIdRoute
+  '/comercial/nova-venda': typeof ComercialNovaVendaRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/onboarding/$id': typeof OnboardingIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +196,11 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/crm/clinicas/$id'
     | '/crm/clinicas/'
+    | '/clientes/'
+    | '/clientes/$id'
+    | '/comercial/nova-venda'
+    | '/onboarding/'
+    | '/onboarding/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -166,6 +216,11 @@ export interface FileRouteTypes {
     | '/crm'
     | '/crm/clinicas/$id'
     | '/crm/clinicas'
+    | '/clientes'
+    | '/clientes/$id'
+    | '/comercial/nova-venda'
+    | '/onboarding'
+    | '/onboarding/$id'
   id:
     | '__root__'
     | '/'
@@ -181,6 +236,11 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/crm/clinicas/$id'
     | '/crm/clinicas/'
+    | '/clientes/'
+    | '/clientes/$id'
+    | '/comercial/nova-venda'
+    | '/onboarding/'
+    | '/onboarding/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -197,6 +257,11 @@ export interface RootRouteChildren {
   CrmIndexRoute: typeof CrmIndexRoute
   CrmClinicasIdRoute: typeof CrmClinicasIdRoute
   CrmClinicasIndexRoute: typeof CrmClinicasIndexRoute
+  ClientesIndexRoute: typeof ClientesIndexRoute
+  ClientesIdRoute: typeof ClientesIdRoute
+  ComercialNovaVendaRoute: typeof ComercialNovaVendaRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  OnboardingIdRoute: typeof OnboardingIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -292,6 +357,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CrmClinicasIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/clientes/': {
+      id: '/clientes/'
+      path: '/clientes'
+      fullPath: '/clientes/'
+      preLoaderRoute: typeof ClientesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/clientes/$id': {
+      id: '/clientes/$id'
+      path: '/clientes/$id'
+      fullPath: '/clientes/$id'
+      preLoaderRoute: typeof ClientesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/comercial/nova-venda': {
+      id: '/comercial/nova-venda'
+      path: '/comercial/nova-venda'
+      fullPath: '/comercial/nova-venda'
+      preLoaderRoute: typeof ComercialNovaVendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/$id': {
+      id: '/onboarding/$id'
+      path: '/onboarding/$id'
+      fullPath: '/onboarding/$id'
+      preLoaderRoute: typeof OnboardingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -309,6 +409,11 @@ const rootRouteChildren: RootRouteChildren = {
   CrmIndexRoute: CrmIndexRoute,
   CrmClinicasIdRoute: CrmClinicasIdRoute,
   CrmClinicasIndexRoute: CrmClinicasIndexRoute,
+  ClientesIndexRoute: ClientesIndexRoute,
+  ClientesIdRoute: ClientesIdRoute,
+  ComercialNovaVendaRoute: ComercialNovaVendaRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+  OnboardingIdRoute: OnboardingIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
