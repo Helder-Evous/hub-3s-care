@@ -219,32 +219,92 @@ export type Database = {
           },
         ]
       }
+      clinic_products: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          id: string
+          product: string
+          sale_id: string | null
+          started_at: string
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          id?: string
+          product: string
+          sale_id?: string | null
+          started_at?: string
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          id?: string
+          product?: string
+          sale_id?: string | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_products_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_products_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinics: {
         Row: {
+          address: string | null
           city: string | null
+          cnpj: string | null
           created_at: string
+          email: string | null
           id: string
           name: string
+          nome_fantasia: string | null
+          phone: string | null
+          razao_social: string | null
           responsible: string | null
           state: string | null
           status: Database["public"]["Enums"]["clinic_status"]
           updated_at: string
         }
         Insert: {
+          address?: string | null
           city?: string | null
+          cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           name: string
+          nome_fantasia?: string | null
+          phone?: string | null
+          razao_social?: string | null
           responsible?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["clinic_status"]
           updated_at?: string
         }
         Update: {
+          address?: string | null
           city?: string | null
+          cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           name?: string
+          nome_fantasia?: string | null
+          phone?: string | null
+          razao_social?: string | null
           responsible?: string | null
           state?: string | null
           status?: Database["public"]["Enums"]["clinic_status"]
@@ -288,6 +348,160 @@ export type Database = {
             foreignKeyName: "contingency_items_clinic_id_fkey"
             columns: ["clinic_id"]
             isOneToOne: true
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_steps: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          notes: string | null
+          onboarding_id: string
+          order_index: number
+          sla_hours: number | null
+          started_at: string | null
+          status: string
+          step_key: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          onboarding_id: string
+          order_index: number
+          sla_hours?: number | null
+          started_at?: string | null
+          status?: string
+          step_key: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          notes?: string | null
+          onboarding_id?: string
+          order_index?: number
+          sla_hours?: number | null
+          started_at?: string | null
+          status?: string
+          step_key?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_steps_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboardings: {
+        Row: {
+          clinic_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          product: string
+          sale_id: string | null
+          sla_deadline: string | null
+          status: string
+        }
+        Insert: {
+          clinic_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          product: string
+          sale_id?: string | null
+          sla_deadline?: string | null
+          status?: string
+        }
+        Update: {
+          clinic_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          product?: string
+          sale_id?: string | null
+          sla_deadline?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboardings_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          clinic_id: string
+          contract_months: number
+          created_at: string
+          id: string
+          notes: string | null
+          origin: string
+          product: string
+          sold_at: string
+          sold_by: string | null
+          value_monthly: number | null
+          value_setup: number | null
+        }
+        Insert: {
+          clinic_id: string
+          contract_months?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          origin: string
+          product: string
+          sold_at?: string
+          sold_by?: string | null
+          value_monthly?: number | null
+          value_setup?: number | null
+        }
+        Update: {
+          clinic_id?: string
+          contract_months?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          origin?: string
+          product?: string
+          sold_at?: string
+          sold_by?: string | null
+          value_monthly?: number | null
+          value_setup?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
             referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
