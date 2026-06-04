@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TvRouteImport } from './routes/tv'
+import { Route as HubBuilderRouteImport } from './routes/hub-builder'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CrmIndexRouteImport } from './routes/crm.index'
 import { Route as CrmVolumeRouteImport } from './routes/crm.volume'
@@ -18,12 +19,18 @@ import { Route as CrmDashboardRouteImport } from './routes/crm.dashboard'
 import { Route as CrmContingenciaRouteImport } from './routes/crm.contingencia'
 import { Route as CrmCanaisRouteImport } from './routes/crm.canais'
 import { Route as CrmAlertasRouteImport } from './routes/crm.alertas'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CrmClinicasIndexRouteImport } from './routes/crm.clinicas.index'
 import { Route as CrmClinicasIdRouteImport } from './routes/crm.clinicas.$id'
 
 const TvRoute = TvRouteImport.update({
   id: '/tv',
   path: '/tv',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HubBuilderRoute = HubBuilderRouteImport.update({
+  id: '/hub-builder',
+  path: '/hub-builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -66,6 +73,11 @@ const CrmAlertasRoute = CrmAlertasRouteImport.update({
   path: '/crm/alertas',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CrmClinicasIndexRoute = CrmClinicasIndexRouteImport.update({
   id: '/crm/clinicas/',
   path: '/crm/clinicas/',
@@ -79,7 +91,9 @@ const CrmClinicasIdRoute = CrmClinicasIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/hub-builder': typeof HubBuilderRoute
   '/tv': typeof TvRoute
+  '/auth/login': typeof AuthLoginRoute
   '/crm/alertas': typeof CrmAlertasRoute
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
@@ -92,7 +106,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/hub-builder': typeof HubBuilderRoute
   '/tv': typeof TvRoute
+  '/auth/login': typeof AuthLoginRoute
   '/crm/alertas': typeof CrmAlertasRoute
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
@@ -106,7 +122,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/hub-builder': typeof HubBuilderRoute
   '/tv': typeof TvRoute
+  '/auth/login': typeof AuthLoginRoute
   '/crm/alertas': typeof CrmAlertasRoute
   '/crm/canais': typeof CrmCanaisRoute
   '/crm/contingencia': typeof CrmContingenciaRoute
@@ -121,7 +139,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/hub-builder'
     | '/tv'
+    | '/auth/login'
     | '/crm/alertas'
     | '/crm/canais'
     | '/crm/contingencia'
@@ -134,7 +154,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/hub-builder'
     | '/tv'
+    | '/auth/login'
     | '/crm/alertas'
     | '/crm/canais'
     | '/crm/contingencia'
@@ -147,7 +169,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/hub-builder'
     | '/tv'
+    | '/auth/login'
     | '/crm/alertas'
     | '/crm/canais'
     | '/crm/contingencia'
@@ -161,7 +185,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HubBuilderRoute: typeof HubBuilderRoute
   TvRoute: typeof TvRoute
+  AuthLoginRoute: typeof AuthLoginRoute
   CrmAlertasRoute: typeof CrmAlertasRoute
   CrmCanaisRoute: typeof CrmCanaisRoute
   CrmContingenciaRoute: typeof CrmContingenciaRoute
@@ -180,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/tv'
       fullPath: '/tv'
       preLoaderRoute: typeof TvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hub-builder': {
+      id: '/hub-builder'
+      path: '/hub-builder'
+      fullPath: '/hub-builder'
+      preLoaderRoute: typeof HubBuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -238,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CrmAlertasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/crm/clinicas/': {
       id: '/crm/clinicas/'
       path: '/crm/clinicas'
@@ -257,7 +297,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HubBuilderRoute: HubBuilderRoute,
   TvRoute: TvRoute,
+  AuthLoginRoute: AuthLoginRoute,
   CrmAlertasRoute: CrmAlertasRoute,
   CrmCanaisRoute: CrmCanaisRoute,
   CrmContingenciaRoute: CrmContingenciaRoute,
@@ -271,13 +313,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
