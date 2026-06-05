@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { recordSystemEvent } from "@/lib/events";
 import { onboardingTemplates } from "./onboarding-templates";
 import type { ProductType } from "./types";
 
@@ -59,6 +60,14 @@ export function useRegisterSale() {
 
         if (clinicErr || !created) throw clinicErr ?? new Error("Falha ao criar clínica");
         clinicId = created.id;
+
+        void recordSystemEvent({
+          event_type: "cliente_criado",
+          entity_type: "clinic",
+          entity_id: clinicId,
+          clinic_id: clinicId,
+          payload: { name: created.name },
+        });
       }
 
       // 1. Registrar venda
@@ -80,6 +89,15 @@ export function useRegisterSale() {
 
       if (saleErr || !sale) throw saleErr ?? new Error("Falha ao registrar venda");
 
+      void recordSystemEvent({
+        event_type: "venda_registrada",
+        entity_type: "sale",
+        entity_id: sale.id,
+        clinic_id: clinicId,
+        sale_id: sale.id,
+        payload: { product: input.product, value_monthly: input.value_monthly },
+      });
+
       // 2. Ativar produto para a clínica
       const { error: cpErr } = await supabase
         .from("clinic_products")
@@ -95,6 +113,15 @@ export function useRegisterSale() {
         );
 
       if (cpErr) throw cpErr;
+
+      void recordSystemEvent({
+        event_type: "produto_contratado",
+        entity_type: "clinic_product",
+        entity_id: clinicId,
+        clinic_id: clinicId,
+        sale_id: sale.id,
+        payload: { product: input.product },
+      });
 
       // 3. Criar onboarding — SLA calculado via horas totais dos steps (base 8h/dia)
       const stepTemplates = onboardingTemplates[input.product];
@@ -116,6 +143,16 @@ export function useRegisterSale() {
 
       if (obErr || !onboarding) throw obErr ?? new Error("Falha ao criar onboarding");
 
+      void recordSystemEvent({
+        event_type: "onboarding_criado",
+        entity_type: "onboarding",
+        entity_id: onboarding.id,
+        clinic_id: clinicId,
+        onboarding_id: onboarding.id,
+        sale_id: sale.id,
+        payload: { product: input.product, sla_deadline: slaDeadline.toISOString() },
+      });
+
       // 4. Inserir etapas do template — primeira etapa já inicia em_andamento
       const stepsPayload = stepTemplates.map((s) => ({
         onboarding_id: onboarding.id,
@@ -133,6 +170,19 @@ export function useRegisterSale() {
 
       if (stepsErr) throw stepsErr;
 
+      // Primeira etapa já iniciada (order_index === 1)
+      const firstStep = stepTemplates.find((s) => s.order_index === 1);
+      if (firstStep) {
+        void recordSystemEvent({
+          event_type: "etapa_onboarding_iniciada",
+          entity_type: "onboarding_step",
+          clinic_id: clinicId,
+          onboarding_id: onboarding.id,
+          sale_id: sale.id,
+          payload: { step_key: firstStep.step_key, title: firstStep.title },
+        });
+      }
+
       return { sale, onboarding, clinicId };
     },
     onSuccess: () => {
@@ -147,6 +197,12 @@ export function useMarkStepDone() {
 
   return useMutation({
     mutationFn: async ({ stepId, onboardingId }: { stepId: string; onboardingId: string }) => {
+      // Busca contexto do onboarding (clinic_id, sale_id) e etapa atual para eventos
+      const [{ data: ob }, { data: currentStep }] = await Promise.all([
+        supabase.from("onboardings").select("clinic_id, sale_id").eq("id", onboardingId).single(),
+        supabase.from("onboarding_steps").select("step_key, title").eq("id", stepId).single(),
+      ]);
+
       // Marca a etapa como concluída
       const { error: stepErr } = await supabase
         .from("onboarding_steps")
@@ -155,10 +211,20 @@ export function useMarkStepDone() {
 
       if (stepErr) throw stepErr;
 
+      void recordSystemEvent({
+        event_type: "etapa_onboarding_concluida",
+        entity_type: "onboarding_step",
+        entity_id: stepId,
+        clinic_id: ob?.clinic_id ?? undefined,
+        onboarding_id: onboardingId,
+        sale_id: ob?.sale_id ?? undefined,
+        payload: { step_key: currentStep?.step_key, title: currentStep?.title },
+      });
+
       // Busca a próxima etapa pendente (menor order_index)
       const { data: pending } = await supabase
         .from("onboarding_steps")
-        .select("id")
+        .select("id, step_key, title")
         .eq("onboarding_id", onboardingId)
         .eq("status", "pendente")
         .order("order_index")
@@ -171,12 +237,31 @@ export function useMarkStepDone() {
           .from("onboarding_steps")
           .update({ status: "em_andamento", started_at: new Date().toISOString() })
           .eq("id", nextStep.id);
+
+        void recordSystemEvent({
+          event_type: "etapa_onboarding_iniciada",
+          entity_type: "onboarding_step",
+          entity_id: nextStep.id,
+          clinic_id: ob?.clinic_id ?? undefined,
+          onboarding_id: onboardingId,
+          sale_id: ob?.sale_id ?? undefined,
+          payload: { step_key: nextStep.step_key, title: nextStep.title },
+        });
       } else {
         // Todas as etapas concluídas — fecha o onboarding
         await supabase
           .from("onboardings")
           .update({ status: "concluido", completed_at: new Date().toISOString() })
           .eq("id", onboardingId);
+
+        void recordSystemEvent({
+          event_type: "onboarding_concluido",
+          entity_type: "onboarding",
+          entity_id: onboardingId,
+          clinic_id: ob?.clinic_id ?? undefined,
+          onboarding_id: onboardingId,
+          sale_id: ob?.sale_id ?? undefined,
+        });
       }
     },
     onSuccess: (_, { onboardingId }) => {

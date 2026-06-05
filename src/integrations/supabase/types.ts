@@ -1226,6 +1226,86 @@ export type Database = {
           },
         ]
       }
+      system_events: {
+        Row: {
+          clinic_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          onboarding_id: string | null
+          payload: Json | null
+          processed: boolean
+          processed_at: string | null
+          sale_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          clinic_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          onboarding_id?: string | null
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          sale_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          clinic_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          onboarding_id?: string | null
+          payload?: Json | null
+          processed?: boolean
+          processed_at?: string | null
+          sale_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_events_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_events_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "vw_clinic_scores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_events_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_events_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       vw_clinic_scores: {

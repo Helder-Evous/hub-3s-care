@@ -4,7 +4,7 @@ import {
   Sparkles, FileText, BarChart3, Layers, LogOut, ChevronDown, ChevronRight,
   ClipboardList, PlusCircle, Users, TrendingUp, GraduationCap,
   BookOpen, GitMerge, FileSignature, RefreshCw, XCircle,
-  BarChart2, DollarSign, CheckSquare, BrainCircuit,
+  BarChart2, DollarSign, CheckSquare, BrainCircuit, Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/shared/lib/utils";
@@ -72,7 +72,8 @@ const nav: NavItem[] = [
     icon: BarChart2,
     children: [
       { section: "Supervisão", children: [
-        { to: "/hub-builder", label: "Centro de Construção", icon: Layers },
+        { to: "/hub-builder",     label: "Centro de Construção", icon: Layers },
+        { to: "/gestao/eventos",  label: "Eventos do Sistema",   icon: Activity },
       ]},
       { section: "Em breve", children: [
         { to: "/hub-builder", label: "Financeiro", icon: DollarSign },
