@@ -19,16 +19,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Configurar identidade Git
+      - name: Configurar credenciais e identidade Git
+        env:
+          MIRROR_PAT: ${{ secrets.MIRROR_PAT }}
         run: |
           git config user.name  "hub-3s-care mirror"
           git config user.email "noreply@github.com"
-
-      - name: Adicionar remote do espelho
-        run: |
-          git remote add mirror \
-            https://x-access-token:${{ secrets.MIRROR_PAT }}@github.com/Helder-Evous/custom-data-buddy.git
+          git config --global credential.helper store
+          echo "https://oauth2:${MIRROR_PAT}@github.com" > ~/.git-credentials
 
       - name: Enviar main para o espelho
         run: |
-          git push mirror main:main --force
+          git push https://github.com/Helder-Evous/custom-data-buddy.git main:main --force
