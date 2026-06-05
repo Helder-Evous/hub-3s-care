@@ -5,8 +5,15 @@ import type { Database } from './types';
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+  // Support both VITE_ and NEXT_PUBLIC_ prefixes for compatibility
+  const SUPABASE_URL = 
+    import.meta.env.VITE_SUPABASE_URL || 
+    import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_URL;
+  const SUPABASE_ANON_KEY = 
+    import.meta.env.VITE_SUPABASE_ANON_KEY || 
+    import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     const missing = [

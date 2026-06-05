@@ -6,7 +6,25 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Expose NEXT_PUBLIC_* env vars to the client as import.meta.env.*
+function nextPublicEnvPlugin() {
+  const prefix = "NEXT_PUBLIC_";
+  const envVars: Record<string, string> = {};
+  for (const key in process.env) {
+    if (key.startsWith(prefix)) {
+      envVars[`import.meta.env.${key}`] = JSON.stringify(process.env[key]);
+    }
+  }
+  return {
+    name: "next-public-env",
+    config: () => ({ define: envVars }),
+  };
+}
+
 export default defineConfig({
+  vite: {
+    plugins: [nextPublicEnvPlugin()],
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
