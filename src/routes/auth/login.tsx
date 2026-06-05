@@ -32,11 +32,13 @@ function LoginPage() {
     const { error: signInError } = await signIn(email, password);
 
     if (signInError) {
-      setError(
-        signInError.message === "Invalid login credentials"
-          ? "E-mail ou senha incorretos."
-          : "Erro ao entrar. Tente novamente.",
-      );
+      // TEMP: exibe erro real para diagnóstico — reverter após confirmar login OK
+      const parts = [
+        `message: ${signInError.message}`,
+        `status: ${'status' in signInError ? (signInError as { status?: number }).status : 'n/a'}`,
+        `name: ${signInError.name}`,
+      ];
+      setError(parts.join(' | '));
       setLoading(false);
       return;
     }
