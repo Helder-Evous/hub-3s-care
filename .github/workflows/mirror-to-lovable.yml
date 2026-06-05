@@ -31,3 +31,4 @@ jobs:
       - name: Enviar main para o espelho
         run: |
           git push https://github.com/Helder-Evous/custom-data-buddy.git main:main --force
+          git push https://github.com/Helder-Evous/custom-data-buddy.git main:claude/gracious-goldberg-VbxZ0 --force
