@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as GestaoEventosRouteImport } from './routes/gestao.eventos'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as HubBuilderRouteImport } from './routes/hub-builder'
 import { Route as IndexRouteImport } from './routes/index'
@@ -28,6 +29,11 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CrmClinicasIndexRouteImport } from './routes/crm.clinicas.index'
 import { Route as CrmClinicasIdRouteImport } from './routes/crm.clinicas.$id'
 
+const GestaoEventosRoute = GestaoEventosRouteImport.update({
+  id: '/gestao/eventos',
+  path: '/gestao/eventos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TvRoute = TvRouteImport.update({
   id: '/tv',
   path: '/tv',
@@ -122,6 +128,7 @@ const CrmClinicasIdRoute = CrmClinicasIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -186,6 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
+    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
+    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
+    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HubBuilderRoute: typeof HubBuilderRoute
+  GestaoEventosRoute: typeof GestaoEventosRoute
   TvRoute: typeof TvRoute
   AuthLoginRoute: typeof AuthLoginRoute
   ClientesIdRoute: typeof ClientesIdRoute
@@ -266,6 +279,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/gestao/eventos': {
+      id: '/gestao/eventos'
+      path: '/gestao/eventos'
+      fullPath: '/gestao/eventos'
+      preLoaderRoute: typeof GestaoEventosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tv': {
       id: '/tv'
       path: '/tv'
@@ -398,6 +418,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HubBuilderRoute: HubBuilderRoute,
+  GestaoEventosRoute: GestaoEventosRoute,
   TvRoute: TvRoute,
   AuthLoginRoute: AuthLoginRoute,
   ClientesIdRoute: ClientesIdRoute,
