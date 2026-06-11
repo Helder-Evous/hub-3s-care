@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as GestaoEventosRouteImport } from './routes/gestao.eventos'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as HubBuilderRouteImport } from './routes/hub-builder'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +16,7 @@ import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
 import { Route as CrmIndexRouteImport } from './routes/crm.index'
 import { Route as ClientesIndexRouteImport } from './routes/clientes.index'
 import { Route as OnboardingIdRouteImport } from './routes/onboarding.$id'
+import { Route as GestaoEventosRouteImport } from './routes/gestao.eventos'
 import { Route as CrmVolumeRouteImport } from './routes/crm.volume'
 import { Route as CrmTemplatesRouteImport } from './routes/crm.templates'
 import { Route as CrmDashboardRouteImport } from './routes/crm.dashboard'
@@ -29,11 +29,6 @@ import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as CrmClinicasIndexRouteImport } from './routes/crm.clinicas.index'
 import { Route as CrmClinicasIdRouteImport } from './routes/crm.clinicas.$id'
 
-const GestaoEventosRoute = GestaoEventosRouteImport.update({
-  id: '/gestao/eventos',
-  path: '/gestao/eventos',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TvRoute = TvRouteImport.update({
   id: '/tv',
   path: '/tv',
@@ -67,6 +62,11 @@ const ClientesIndexRoute = ClientesIndexRouteImport.update({
 const OnboardingIdRoute = OnboardingIdRouteImport.update({
   id: '/onboarding/$id',
   path: '/onboarding/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GestaoEventosRoute = GestaoEventosRouteImport.update({
+  id: '/gestao/eventos',
+  path: '/gestao/eventos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmVolumeRoute = CrmVolumeRouteImport.update({
@@ -128,7 +128,6 @@ const CrmClinicasIdRoute = CrmClinicasIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
-  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -139,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/crm/dashboard': typeof CrmDashboardRoute
   '/crm/templates': typeof CrmTemplatesRoute
   '/crm/volume': typeof CrmVolumeRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/onboarding/$id': typeof OnboardingIdRoute
   '/clientes/': typeof ClientesIndexRoute
   '/crm/': typeof CrmIndexRoute
@@ -149,7 +149,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
-  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -160,6 +159,7 @@ export interface FileRoutesByTo {
   '/crm/dashboard': typeof CrmDashboardRoute
   '/crm/templates': typeof CrmTemplatesRoute
   '/crm/volume': typeof CrmVolumeRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/onboarding/$id': typeof OnboardingIdRoute
   '/clientes': typeof ClientesIndexRoute
   '/crm': typeof CrmIndexRoute
@@ -171,7 +171,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/hub-builder': typeof HubBuilderRoute
-  '/gestao/eventos': typeof GestaoEventosRoute
   '/tv': typeof TvRoute
   '/auth/login': typeof AuthLoginRoute
   '/clientes/$id': typeof ClientesIdRoute
@@ -182,6 +181,7 @@ export interface FileRoutesById {
   '/crm/dashboard': typeof CrmDashboardRoute
   '/crm/templates': typeof CrmTemplatesRoute
   '/crm/volume': typeof CrmVolumeRoute
+  '/gestao/eventos': typeof GestaoEventosRoute
   '/onboarding/$id': typeof OnboardingIdRoute
   '/clientes/': typeof ClientesIndexRoute
   '/crm/': typeof CrmIndexRoute
@@ -195,7 +195,6 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
-    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -205,6 +204,7 @@ export interface FileRouteTypes {
     | '/crm/dashboard'
     | '/crm/templates'
     | '/crm/volume'
+    | '/gestao/eventos'
     | '/onboarding/$id'
     | '/clientes/'
     | '/crm/'
@@ -216,7 +216,6 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
-    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -226,6 +225,7 @@ export interface FileRouteTypes {
     | '/crm/dashboard'
     | '/crm/templates'
     | '/crm/volume'
+    | '/gestao/eventos'
     | '/onboarding/$id'
     | '/clientes'
     | '/crm'
@@ -237,7 +237,6 @@ export interface FileRouteTypes {
     | '/'
     | '/hub-builder'
     | '/tv'
-    | '/gestao/eventos'
     | '/auth/login'
     | '/clientes/$id'
     | '/comercial/nova-venda'
@@ -247,6 +246,7 @@ export interface FileRouteTypes {
     | '/crm/dashboard'
     | '/crm/templates'
     | '/crm/volume'
+    | '/gestao/eventos'
     | '/onboarding/$id'
     | '/clientes/'
     | '/crm/'
@@ -258,7 +258,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HubBuilderRoute: typeof HubBuilderRoute
-  GestaoEventosRoute: typeof GestaoEventosRoute
   TvRoute: typeof TvRoute
   AuthLoginRoute: typeof AuthLoginRoute
   ClientesIdRoute: typeof ClientesIdRoute
@@ -269,6 +268,7 @@ export interface RootRouteChildren {
   CrmDashboardRoute: typeof CrmDashboardRoute
   CrmTemplatesRoute: typeof CrmTemplatesRoute
   CrmVolumeRoute: typeof CrmVolumeRoute
+  GestaoEventosRoute: typeof GestaoEventosRoute
   OnboardingIdRoute: typeof OnboardingIdRoute
   ClientesIndexRoute: typeof ClientesIndexRoute
   CrmIndexRoute: typeof CrmIndexRoute
@@ -279,13 +279,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/gestao/eventos': {
-      id: '/gestao/eventos'
-      path: '/gestao/eventos'
-      fullPath: '/gestao/eventos'
-      preLoaderRoute: typeof GestaoEventosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tv': {
       id: '/tv'
       path: '/tv'
@@ -333,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding/$id'
       fullPath: '/onboarding/$id'
       preLoaderRoute: typeof OnboardingIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gestao/eventos': {
+      id: '/gestao/eventos'
+      path: '/gestao/eventos'
+      fullPath: '/gestao/eventos'
+      preLoaderRoute: typeof GestaoEventosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm/volume': {
@@ -418,7 +418,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HubBuilderRoute: HubBuilderRoute,
-  GestaoEventosRoute: GestaoEventosRoute,
   TvRoute: TvRoute,
   AuthLoginRoute: AuthLoginRoute,
   ClientesIdRoute: ClientesIdRoute,
@@ -429,6 +428,7 @@ const rootRouteChildren: RootRouteChildren = {
   CrmDashboardRoute: CrmDashboardRoute,
   CrmTemplatesRoute: CrmTemplatesRoute,
   CrmVolumeRoute: CrmVolumeRoute,
+  GestaoEventosRoute: GestaoEventosRoute,
   OnboardingIdRoute: OnboardingIdRoute,
   ClientesIndexRoute: ClientesIndexRoute,
   CrmIndexRoute: CrmIndexRoute,
@@ -439,13 +439,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
