@@ -72,8 +72,9 @@ const nav: NavItem[] = [
     icon: BarChart2,
     children: [
       { section: "Supervisão", children: [
-        { to: "/hub-builder",     label: "Centro de Construção", icon: Layers },
-        { to: "/gestao/eventos",  label: "Eventos do Sistema",   icon: Activity },
+        { to: "/hub-builder",          label: "Centro de Construção", icon: Layers },
+        { to: "/gestao/eventos",       label: "Eventos do Sistema",   icon: Activity },
+        { to: "/gestao/tarefas-ia",    label: "Tarefas de IA",        icon: BrainCircuit },
       ]},
       { section: "Em breve", children: [
         { to: "/hub-builder", label: "Financeiro", icon: DollarSign },
