@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import {
   BrainCircuit, CheckCircle2, XCircle, Clock, AlertTriangle,
   Loader2, RefreshCw, ChevronDown, ChevronRight, User,
+  ChevronLeft, Zap, ShieldCheck, TrendingUp, Bot,
 } from "lucide-react";
 
 export const Route = createFileRoute("/gestao/tarefas-ia")({
@@ -41,42 +43,28 @@ interface AiTask {
   next_action: string | null;
 }
 
-// ─── constantes de exibição ────────────────────────────────────────────────────
+// ─── exibição ─────────────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<TaskStatus, string> = {
-  pendente:    "Pendente",
-  em_revisao:  "Em revisão",
-  aprovada:    "Aprovada",
-  rejeitada:   "Rejeitada",
-  executando:  "Executando",
-  concluida:   "Concluída",
-  falhou:      "Falhou",
+  pendente:   "Pendente",
+  em_revisao: "Em revisão",
+  aprovada:   "Aprovada",
+  rejeitada:  "Rejeitada",
+  executando: "Executando",
+  concluida:  "Concluída",
+  falhou:     "Falhou",
 };
 
 const STATUS_CLASS: Record<TaskStatus, string> = {
-  pendente:    "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
-  em_revisao:  "bg-blue-500/10   text-blue-600   border-blue-500/20",
-  aprovada:    "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  rejeitada:   "bg-red-500/10    text-red-600    border-red-500/20",
-  executando:  "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  concluida:   "bg-teal-500/10   text-teal-600   border-teal-500/20",
-  falhou:      "bg-destructive/10 text-destructive border-destructive/20",
+  pendente:   "bg-yellow-500/10 text-yellow-700 border-yellow-500/20",
+  em_revisao: "bg-blue-500/10   text-blue-600   border-blue-500/20",
+  aprovada:   "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+  rejeitada:  "bg-red-500/10    text-red-600    border-red-500/20",
+  executando: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  concluida:  "bg-teal-500/10   text-teal-600   border-teal-500/20",
+  falhou:     "bg-destructive/10 text-destructive border-destructive/20",
 };
 
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  baixa:   "Baixa",
-  media:   "Média",
-  alta:    "Alta",
-  critica: "Crítica",
-};
-
-const PRIORITY_CLASS: Record<TaskPriority, string> = {
-  baixa:   "bg-muted text-muted-foreground border-border",
-  media:   "bg-blue-500/10  text-blue-600  border-blue-500/20",
-  alta:    "bg-orange-500/10 text-orange-600 border-orange-500/20",
-  critica: "bg-red-500/10   text-red-600   border-red-500/20",
-};
-
-// escala 1-2 verde · 3 amarelo · 4 laranja · 5 vermelho (impacto e urgência)
+// escala 1-2 verde · 3 amarelo · 4 laranja · 5 vermelho
 function levelClass(level: number | null): string {
   if (level == null) return "bg-muted text-muted-foreground border-border";
   if (level >= 5) return "bg-red-500/10    text-red-600    border-red-500/20";
@@ -85,13 +73,12 @@ function levelClass(level: number | null): string {
   return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
 }
 
-// faixa do priority_score → rótulo + cor de destaque
-function scoreTier(score: number | null): { label: string; class: string } {
-  if (score == null) return { label: "—", class: "bg-muted text-muted-foreground border-border" };
-  if (score >= 20) return { label: "Crítica", class: "bg-red-500/15    text-red-700    border-red-500/30" };
-  if (score >= 12) return { label: "Alta",    class: "bg-orange-500/15 text-orange-700 border-orange-500/30" };
-  if (score >= 6)  return { label: "Média",   class: "bg-yellow-500/15 text-yellow-800 border-yellow-500/30" };
-  return { label: "Baixa", class: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" };
+function scoreTier(score: number | null): { label: string; cls: string } {
+  if (score == null) return { label: "—",       cls: "bg-muted text-muted-foreground border-border" };
+  if (score >= 20)   return { label: "Crítica",  cls: "bg-red-500/15    text-red-700    border-red-500/30" };
+  if (score >= 12)   return { label: "Alta",     cls: "bg-orange-500/15 text-orange-700 border-orange-500/30" };
+  if (score >= 6)    return { label: "Média",    cls: "bg-yellow-500/15 text-yellow-800 border-yellow-500/30" };
+  return                      { label: "Baixa",   cls: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" };
 }
 
 const TABS: { key: TabFilter; label: string }[] = [
@@ -121,7 +108,6 @@ function useAiTasks() {
         .order("created_at", { ascending: false })
         .limit(300);
 
-      // tabela ainda não existe → trata como lista vazia
       if (error) {
         if ((error as { code?: string }).code === "42P01") return [];
         throw error;
@@ -132,7 +118,6 @@ function useAiTasks() {
   });
 }
 
-// ─── mutations ────────────────────────────────────────────────────────────────
 function useUpdateTaskStatus() {
   const qc = useQueryClient();
   return useMutation({
@@ -147,7 +132,7 @@ function useUpdateTaskStatus() {
   });
 }
 
-// ─── subcomponents ────────────────────────────────────────────────────────────
+// ─── subcomponentes ───────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: TaskStatus }) {
   return (
     <span className={cn(
@@ -155,17 +140,6 @@ function StatusBadge({ status }: { status: TaskStatus }) {
       STATUS_CLASS[status],
     )}>
       {STATUS_LABEL[status]}
-    </span>
-  );
-}
-
-function PriorityBadge({ priority }: { priority: TaskPriority }) {
-  return (
-    <span className={cn(
-      "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium",
-      PRIORITY_CLASS[priority],
-    )}>
-      {PRIORITY_LABEL[priority]}
     </span>
   );
 }
@@ -186,7 +160,7 @@ function ScoreBadge({ score }: { score: number | null }) {
   return (
     <span className={cn(
       "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-bold",
-      tier.class,
+      tier.cls,
     )}>
       <span className="text-sm tabular-nums">{score ?? "—"}</span>
       <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">{tier.label}</span>
@@ -194,14 +168,26 @@ function ScoreBadge({ score }: { score: number | null }) {
   );
 }
 
-function StatCard({
-  label, value, sub, accent,
-}: { label: string; value: number; sub?: string; accent?: string }) {
+function SummaryCard({
+  icon: Icon, label, value, sub, accent, iconBg,
+}: {
+  icon: typeof BrainCircuit;
+  label: string;
+  value: number;
+  sub?: string;
+  accent?: string;
+  iconBg?: string;
+}) {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-sm">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={cn("mt-1 text-2xl font-semibold", accent ?? "text-foreground")}>{value}</p>
-      {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+    <div className="rounded-xl border bg-card p-5 shadow-sm flex items-start gap-4">
+      <div className={cn("rounded-lg p-2.5 shrink-0", iconBg ?? "bg-muted")}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className={cn("mt-0.5 text-2xl font-semibold", accent ?? "text-foreground")}>{value}</p>
+        {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
+      </div>
     </div>
   );
 }
@@ -241,7 +227,9 @@ function ExpandableRow({ task, onApprove, onReject, updating }: {
         <td className="px-4 py-3 text-center"><LevelBadge level={task.urgency_level} /></td>
         <td className="px-4 py-3 text-center">
           {task.requires_human
-            ? <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-600"><User className="h-3 w-3" /> Sim</span>
+            ? <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-600">
+                <User className="h-3 w-3" /> Sim
+              </span>
             : <span className="text-[10px] text-muted-foreground">Não</span>}
         </td>
         <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
@@ -288,26 +276,41 @@ function ExpandableRow({ task, onApprove, onReject, updating }: {
           )}
         </td>
       </tr>
+
       {open && (
         <tr className="bg-muted/10 border-t border-dashed">
-          <td colSpan={10} className="px-8 py-3">
-            <div className="flex flex-col gap-1.5 text-sm">
+          <td colSpan={10} className="px-8 py-4">
+            <div className="flex flex-col gap-2 text-sm">
               {task.description && (
                 <p className="text-foreground">{task.description}</p>
               )}
               {task.next_action && (
-                <p className="text-foreground">
+                <p>
                   <span className="text-muted-foreground">Próxima ação: </span>
                   <strong>{task.next_action}</strong>
                 </p>
               )}
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-1">
                 <span>Tipo: <strong>{task.task_type}</strong></span>
-                <span>Prioridade: <strong>{task.priority_score ?? "—"}</strong> (impacto {task.impact_level ?? "—"} × urgência {task.urgency_level ?? "—"})</span>
+                <span>
+                  Prioridade: <strong>{task.priority_score ?? "—"}</strong>
+                  {" "}(impacto {task.impact_level ?? "—"} × urgência {task.urgency_level ?? "—"})
+                </span>
                 <span>Exige humano: <strong>{task.requires_human ? "Sim" : "Não"}</strong></span>
-                <span>Confiança IA: <strong>{task.confidence_score != null ? `${Math.round(task.confidence_score * 100)}%` : "não avaliada"}</strong></span>
-                {task.source_event_type && <span>Evento de origem: <strong>{task.source_event_type}</strong></span>}
-                {task.entity_type && <span>Entidade: <strong>{task.entity_type}</strong></span>}
+                <span>
+                  Confiança IA:{" "}
+                  <strong>
+                    {task.confidence_score != null
+                      ? `${Math.round(task.confidence_score * 100)}%`
+                      : "não avaliada"}
+                  </strong>
+                </span>
+                {task.source_event_type && (
+                  <span>Evento de origem: <strong>{task.source_event_type}</strong></span>
+                )}
+                {task.entity_type && (
+                  <span>Entidade: <strong>{task.entity_type}</strong></span>
+                )}
                 <span>Origem: <strong>{task.source}</strong></span>
                 {task.error_message && (
                   <span className="text-destructive">Erro: {task.error_message}</span>
@@ -329,163 +332,224 @@ export default function TarefasIAPage() {
 
   const filtered = tab === "todas" ? tasks : tasks.filter((t) => t.status === tab);
 
-  // contagem por faixa de priority_score (item 7), considerando apenas tarefas ativas
+  // Resumo executivo (item 4)
+  const today = new Date().toDateString();
+  const concluidasHoje = tasks.filter(
+    (t) => t.status === "concluida" && new Date(t.created_at).toDateString() === today
+  ).length;
+  const executadasAuto = tasks.filter(
+    (t) => t.auto_executable && t.status === "concluida"
+  ).length;
+  const criticas = tasks.filter(
+    (t) => (t.priority_score ?? 0) >= 20 && t.status !== "concluida" && t.status !== "rejeitada"
+  ).length;
+  const aguardandoHumano = tasks.filter(
+    (t) => t.requires_human === true && (t.status === "pendente" || t.status === "em_revisao")
+  ).length;
+
+  // Cards de faixa (tabela interna)
   const active = tasks.filter((t) => t.status !== "concluida" && t.status !== "rejeitada");
   const inRange = (t: AiTask, min: number, max: number) =>
     t.priority_score != null && t.priority_score >= min && t.priority_score <= max;
-
-  const counts = {
-    critica:    active.filter((t) => t.priority_score != null && t.priority_score >= 20).length,
-    alta:       active.filter((t) => inRange(t, 12, 19)).length,
-    media:      active.filter((t) => inRange(t, 6, 11)).length,
-    baixa:      active.filter((t) => inRange(t, 1, 5)).length,
-    humano:     active.filter((t) => t.requires_human === true).length,
+  const scoreCounts = {
+    critica: active.filter((t) => (t.priority_score ?? 0) >= 20).length,
+    alta:    active.filter((t) => inRange(t, 12, 19)).length,
+    media:   active.filter((t) => inRange(t, 6, 11)).length,
+    baixa:   active.filter((t) => inRange(t, 1, 5)).length,
   };
 
   function approve(id: string) { updateStatus({ id, status: "aprovada" }); }
   function reject(id: string)  { updateStatus({ id, status: "rejeitada" }); }
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      {/* ── cabeçalho ─────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 grid place-items-center">
-            <BrainCircuit className="h-5 w-5 text-primary" />
-          </div>
+    <AppShell>
+      <div className="mx-auto max-w-[1400px] px-6 py-10">
+
+        {/* ── Botão voltar ─────────────────────────────────────────────────── */}
+        <Link
+          to="/hub-builder"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
+        >
+          <ChevronLeft className="h-4 w-4" /> Gestão
+        </Link>
+
+        {/* ── Cabeçalho ────────────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-xl font-semibold">Tarefas de IA</h1>
-            <p className="text-sm text-muted-foreground">
-              Fila de tarefas propostas por agentes — supervisão e aprovação humana
+            {/* breadcrumb */}
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Gestão &rsaquo; IA Supervisor
+            </div>
+            <h1 className="mt-1 text-3xl font-semibold tracking-tight">Tarefas de IA</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Centro de Operações da IA — supervisão, aprovação e acompanhamento de tarefas propostas por agentes
             </p>
           </div>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 shrink-0"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
+            Atualizar
+          </button>
         </div>
-        <button
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
-          Atualizar
-        </button>
-      </div>
 
-      {/* ── stat cards (faixas de priority_score) ─────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Críticas" value={counts.critica}
-          accent={counts.critica > 0 ? "text-red-600" : undefined}
-          sub="score ≥ 20" />
-        <StatCard label="Alta prioridade" value={counts.alta}
-          accent={counts.alta > 0 ? "text-orange-600" : undefined}
-          sub="score 12–19" />
-        <StatCard label="Média prioridade" value={counts.media}
-          accent={counts.media > 0 ? "text-yellow-600" : undefined}
-          sub="score 6–11" />
-        <StatCard label="Baixa prioridade" value={counts.baixa}
-          accent={counts.baixa > 0 ? "text-emerald-600" : undefined}
-          sub="score 1–5" />
-        <StatCard label="Aguardando humano" value={counts.humano}
-          accent={counts.humano > 0 ? "text-orange-600" : undefined}
-          sub="exigem aprovação" />
-      </div>
+        {/* ── Resumo executivo ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 mb-8">
+          <SummaryCard
+            icon={AlertTriangle}
+            label="Tarefas críticas"
+            value={criticas}
+            sub="score ≥ 20 ativas"
+            accent={criticas > 0 ? "text-red-600" : undefined}
+            iconBg={criticas > 0 ? "bg-red-500/10 text-red-600" : "bg-muted text-muted-foreground"}
+          />
+          <SummaryCard
+            icon={ShieldCheck}
+            label="Aguardando aprovação"
+            value={aguardandoHumano}
+            sub="exigem revisão humana"
+            accent={aguardandoHumano > 0 ? "text-orange-600" : undefined}
+            iconBg={aguardandoHumano > 0 ? "bg-orange-500/10 text-orange-600" : "bg-muted text-muted-foreground"}
+          />
+          <SummaryCard
+            icon={TrendingUp}
+            label="Concluídas hoje"
+            value={concluidasHoje}
+            sub="executadas com sucesso"
+            accent={concluidasHoje > 0 ? "text-teal-600" : undefined}
+            iconBg={concluidasHoje > 0 ? "bg-teal-500/10 text-teal-600" : "bg-muted text-muted-foreground"}
+          />
+          <SummaryCard
+            icon={Bot}
+            label="Executadas automaticamente"
+            value={executadasAuto}
+            sub="sem intervenção humana"
+            accent={executadasAuto > 0 ? "text-primary" : undefined}
+            iconBg={executadasAuto > 0 ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}
+          />
+        </div>
 
-      {/* ── tabs ──────────────────────────────────────────────────────────── */}
-      <div className="flex gap-1 border-b">
-        {TABS.map(({ key, label }) => {
-          const count = key === "todas" ? tasks.length
-            : tasks.filter((t) => t.status === key).length;
-          return (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={cn(
-                "px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
-                tab === key
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
+        {/* ── Faixas de score (pills compactos) ───────────────────────────── */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {[
+            { label: "Crítica ≥ 20", count: scoreCounts.critica, cls: "border-red-500/30 bg-red-500/10 text-red-700" },
+            { label: "Alta 12–19",   count: scoreCounts.alta,    cls: "border-orange-500/30 bg-orange-500/10 text-orange-700" },
+            { label: "Média 6–11",   count: scoreCounts.media,   cls: "border-yellow-500/30 bg-yellow-500/10 text-yellow-800" },
+            { label: "Baixa 1–5",    count: scoreCounts.baixa,   cls: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700" },
+          ].map(({ label, count, cls }) => (
+            <span key={label} className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
+              cls,
+            )}>
+              <Zap className="h-3 w-3" />
               {label}
-              {count > 0 && (
-                <span className={cn(
-                  "ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium",
-                  tab === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
-                )}>
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+              <span className="font-bold">{count}</span>
+            </span>
+          ))}
+        </div>
+
+        {/* ── Tabs ─────────────────────────────────────────────────────────── */}
+        <div className="flex gap-1 border-b mb-4">
+          {TABS.map(({ key, label }) => {
+            const count = key === "todas"
+              ? tasks.length
+              : tasks.filter((t) => t.status === key).length;
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={cn(
+                  "px-3 py-2 text-sm font-medium transition-colors border-b-2 -mb-px",
+                  tab === key
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {label}
+                {count > 0 && (
+                  <span className={cn(
+                    "ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium",
+                    tab === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Estados ──────────────────────────────────────────────────────── */}
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-8">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando tarefas…
+          </div>
+        )}
+
+        {error && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+            Erro ao carregar tarefas: {(error as Error).message}
+          </div>
+        )}
+
+        {!isLoading && !error && tasks.length === 0 && (
+          <div className="rounded-xl border bg-card p-16 text-center text-muted-foreground">
+            <BrainCircuit className="mx-auto mb-3 h-10 w-10 opacity-30" />
+            <p className="text-sm font-medium">Nenhuma tarefa de IA ainda</p>
+            <p className="mt-1 text-xs max-w-xs mx-auto">
+              Quando agentes criarem tarefas elas aparecerão aqui para revisão e aprovação.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !error && tasks.length > 0 && filtered.length === 0 && (
+          <div className="rounded-xl border bg-card p-10 text-center text-muted-foreground">
+            <Clock className="mx-auto mb-2 h-6 w-6 opacity-30" />
+            <p className="text-sm">Nenhuma tarefa com status "{TABS.find(t => t.key === tab)?.label}"</p>
+          </div>
+        )}
+
+        {/* ── Tabela ───────────────────────────────────────────────────────── */}
+        {!isLoading && !error && filtered.length > 0 && (
+          <div className="rounded-xl border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
+                    <th className="px-4 py-3 w-6" />
+                    <th className="px-4 py-3 font-medium">Prioridade</th>
+                    <th className="px-4 py-3 font-medium">Status</th>
+                    <th className="px-4 py-3 font-medium">Tarefa</th>
+                    <th className="px-4 py-3 font-medium">Cliente</th>
+                    <th className="px-4 py-3 font-medium text-center">Impacto</th>
+                    <th className="px-4 py-3 font-medium text-center">Urgência</th>
+                    <th className="px-4 py-3 font-medium text-center">Exige Humano</th>
+                    <th className="px-4 py-3 font-medium">Próxima Ação</th>
+                    <th className="px-4 py-3 font-medium">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {filtered.map((task) => (
+                    <ExpandableRow
+                      key={task.id}
+                      task={task}
+                      onApprove={approve}
+                      onReject={reject}
+                      updating={updating}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
+              {filtered.length} tarefa{filtered.length !== 1 ? "s" : ""}
+              {tab !== "todas" && ` · ${tasks.length} no total`}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* ── estados ───────────────────────────────────────────────────────── */}
-      {isLoading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando tarefas…
-        </div>
-      )}
-
-      {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-          Erro ao carregar tarefas: {(error as Error).message}
-        </div>
-      )}
-
-      {!isLoading && !error && tasks.length === 0 && (
-        <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">
-          <BrainCircuit className="mx-auto mb-3 h-8 w-8 opacity-30" />
-          <p className="text-sm font-medium">Nenhuma tarefa de IA ainda</p>
-          <p className="mt-1 text-xs">
-            Quando agentes criarem tarefas, elas aparecerão aqui para revisão e aprovação.
-          </p>
-        </div>
-      )}
-
-      {!isLoading && !error && tasks.length > 0 && filtered.length === 0 && (
-        <div className="rounded-xl border bg-card p-8 text-center text-muted-foreground">
-          <Clock className="mx-auto mb-2 h-6 w-6 opacity-30" />
-          <p className="text-sm">Nenhuma tarefa com status "{TABS.find(t => t.key === tab)?.label}"</p>
-        </div>
-      )}
-
-      {!isLoading && !error && filtered.length > 0 && (
-        <div className="rounded-xl border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 w-6" />
-                  <th className="px-4 py-3 font-medium">Prioridade</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Tarefa</th>
-                  <th className="px-4 py-3 font-medium">Cliente</th>
-                  <th className="px-4 py-3 font-medium text-center">Impacto</th>
-                  <th className="px-4 py-3 font-medium text-center">Urgência</th>
-                  <th className="px-4 py-3 font-medium text-center">Exige Humano</th>
-                  <th className="px-4 py-3 font-medium">Próxima Ação</th>
-                  <th className="px-4 py-3 font-medium">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filtered.map((task) => (
-                  <ExpandableRow
-                    key={task.id}
-                    task={task}
-                    onApprove={approve}
-                    onReject={reject}
-                    updating={updating}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="border-t bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
-            {filtered.length} tarefa{filtered.length !== 1 ? "s" : ""}
-            {tab !== "todas" && ` · ${tasks.length} no total`}
-          </div>
-        </div>
-      )}
-    </div>
+    </AppShell>
   );
 }
