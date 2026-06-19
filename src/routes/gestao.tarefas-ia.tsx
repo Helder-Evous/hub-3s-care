@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
   BrainCircuit, CheckCircle2, XCircle, Clock, AlertTriangle,
-  Loader2, RefreshCw, ChevronDown, ChevronRight,
+  Loader2, RefreshCw, ChevronDown, ChevronRight, User,
 } from "lucide-react";
 
 export const Route = createFileRoute("/gestao/tarefas-ia")({
@@ -31,6 +31,14 @@ interface AiTask {
   auto_executable: boolean;
   error_message: string | null;
   clinics: { name: string } | null;
+  // priorização inteligente
+  impact_level: number | null;
+  urgency_level: number | null;
+  priority_score: number | null;
+  confidence_score: number | null;
+  source_event_type: string | null;
+  requires_human: boolean | null;
+  next_action: string | null;
 }
 
 // ─── constantes de exibição ────────────────────────────────────────────────────
@@ -68,6 +76,24 @@ const PRIORITY_CLASS: Record<TaskPriority, string> = {
   critica: "bg-red-500/10   text-red-600   border-red-500/20",
 };
 
+// escala 1-2 verde · 3 amarelo · 4 laranja · 5 vermelho (impacto e urgência)
+function levelClass(level: number | null): string {
+  if (level == null) return "bg-muted text-muted-foreground border-border";
+  if (level >= 5) return "bg-red-500/10    text-red-600    border-red-500/20";
+  if (level === 4) return "bg-orange-500/10 text-orange-600 border-orange-500/20";
+  if (level === 3) return "bg-yellow-500/10 text-yellow-700 border-yellow-500/20";
+  return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+}
+
+// faixa do priority_score → rótulo + cor de destaque
+function scoreTier(score: number | null): { label: string; class: string } {
+  if (score == null) return { label: "—", class: "bg-muted text-muted-foreground border-border" };
+  if (score >= 20) return { label: "Crítica", class: "bg-red-500/15    text-red-700    border-red-500/30" };
+  if (score >= 12) return { label: "Alta",    class: "bg-orange-500/15 text-orange-700 border-orange-500/30" };
+  if (score >= 6)  return { label: "Média",   class: "bg-yellow-500/15 text-yellow-800 border-yellow-500/30" };
+  return { label: "Baixa", class: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30" };
+}
+
 const TABS: { key: TabFilter; label: string }[] = [
   { key: "todas",     label: "Todas"      },
   { key: "pendente",  label: "Pendentes"  },
@@ -87,8 +113,11 @@ function useAiTasks() {
         .select(`
           id, created_at, task_type, title, description,
           priority, status, entity_type, source, auto_executable, error_message,
+          impact_level, urgency_level, priority_score, confidence_score,
+          source_event_type, requires_human, next_action,
           clinics:clinic_id ( name )
         `)
+        .order("priority_score", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .limit(300);
 
@@ -141,6 +170,30 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   );
 }
 
+function LevelBadge({ level }: { level: number | null }) {
+  return (
+    <span className={cn(
+      "inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs font-semibold",
+      levelClass(level),
+    )}>
+      {level ?? "—"}
+    </span>
+  );
+}
+
+function ScoreBadge({ score }: { score: number | null }) {
+  const tier = scoreTier(score);
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-bold",
+      tier.class,
+    )}>
+      <span className="text-sm tabular-nums">{score ?? "—"}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wide opacity-80">{tier.label}</span>
+    </span>
+  );
+}
+
 function StatCard({
   label, value, sub, accent,
 }: { label: string; value: number; sub?: string; accent?: string }) {
@@ -175,23 +228,24 @@ function ExpandableRow({ task, onApprove, onReject, updating }: {
             : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
         </td>
         <td className="px-4 py-3">
-          <StatusBadge status={task.status} />
+          <ScoreBadge score={task.priority_score} />
         </td>
         <td className="px-4 py-3">
-          <PriorityBadge priority={task.priority} />
+          <StatusBadge status={task.status} />
         </td>
-        <td className="px-4 py-3 font-medium text-foreground max-w-[240px] truncate">
+        <td className="px-4 py-3 font-medium text-foreground max-w-[220px] truncate">
           {task.title}
         </td>
         <td className="px-4 py-3 text-sm text-muted-foreground">{clinic}</td>
-        <td className="px-4 py-3 text-xs text-muted-foreground">
-          <span className="rounded-full bg-muted px-2 py-0.5">{task.task_type}</span>
+        <td className="px-4 py-3 text-center"><LevelBadge level={task.impact_level} /></td>
+        <td className="px-4 py-3 text-center"><LevelBadge level={task.urgency_level} /></td>
+        <td className="px-4 py-3 text-center">
+          {task.requires_human
+            ? <span className="inline-flex items-center gap-1 rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[10px] font-medium text-orange-600"><User className="h-3 w-3" /> Sim</span>
+            : <span className="text-[10px] text-muted-foreground">Não</span>}
         </td>
-        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-          {new Intl.DateTimeFormat("pt-BR", {
-            day: "2-digit", month: "2-digit",
-            hour: "2-digit", minute: "2-digit",
-          }).format(new Date(task.created_at))}
+        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px] truncate">
+          {task.next_action ?? "—"}
         </td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           {isPending && (
@@ -236,15 +290,25 @@ function ExpandableRow({ task, onApprove, onReject, updating }: {
       </tr>
       {open && (
         <tr className="bg-muted/10 border-t border-dashed">
-          <td colSpan={8} className="px-8 py-3">
+          <td colSpan={10} className="px-8 py-3">
             <div className="flex flex-col gap-1.5 text-sm">
               {task.description && (
                 <p className="text-foreground">{task.description}</p>
               )}
+              {task.next_action && (
+                <p className="text-foreground">
+                  <span className="text-muted-foreground">Próxima ação: </span>
+                  <strong>{task.next_action}</strong>
+                </p>
+              )}
               <div className="flex flex-wrap gap-4 text-xs text-muted-foreground mt-1">
+                <span>Tipo: <strong>{task.task_type}</strong></span>
+                <span>Prioridade: <strong>{task.priority_score ?? "—"}</strong> (impacto {task.impact_level ?? "—"} × urgência {task.urgency_level ?? "—"})</span>
+                <span>Exige humano: <strong>{task.requires_human ? "Sim" : "Não"}</strong></span>
+                <span>Confiança IA: <strong>{task.confidence_score != null ? `${Math.round(task.confidence_score * 100)}%` : "não avaliada"}</strong></span>
+                {task.source_event_type && <span>Evento de origem: <strong>{task.source_event_type}</strong></span>}
                 {task.entity_type && <span>Entidade: <strong>{task.entity_type}</strong></span>}
                 <span>Origem: <strong>{task.source}</strong></span>
-                <span>Auto-executável: <strong>{task.auto_executable ? "Sim" : "Não"}</strong></span>
                 {task.error_message && (
                   <span className="text-destructive">Erro: {task.error_message}</span>
                 )}
@@ -265,11 +329,17 @@ export default function TarefasIAPage() {
 
   const filtered = tab === "todas" ? tasks : tasks.filter((t) => t.status === tab);
 
+  // contagem por faixa de priority_score (item 7), considerando apenas tarefas ativas
+  const active = tasks.filter((t) => t.status !== "concluida" && t.status !== "rejeitada");
+  const inRange = (t: AiTask, min: number, max: number) =>
+    t.priority_score != null && t.priority_score >= min && t.priority_score <= max;
+
   const counts = {
-    pendente:  tasks.filter((t) => t.status === "pendente" || t.status === "em_revisao").length,
-    critica:   tasks.filter((t) => t.priority === "critica" && t.status === "pendente").length,
-    concluida: tasks.filter((t) => t.status === "concluida").length,
-    falhou:    tasks.filter((t) => t.status === "falhou").length,
+    critica:    active.filter((t) => t.priority_score != null && t.priority_score >= 20).length,
+    alta:       active.filter((t) => inRange(t, 12, 19)).length,
+    media:      active.filter((t) => inRange(t, 6, 11)).length,
+    baixa:      active.filter((t) => inRange(t, 1, 5)).length,
+    humano:     active.filter((t) => t.requires_human === true).length,
   };
 
   function approve(id: string) { updateStatus({ id, status: "aprovada" }); }
@@ -300,19 +370,23 @@ export default function TarefasIAPage() {
         </button>
       </div>
 
-      {/* ── stat cards ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard label="Aguardando revisão" value={counts.pendente}
-          accent={counts.pendente > 0 ? "text-yellow-600" : undefined}
-          sub={counts.pendente > 0 ? "requerem ação" : "nenhuma pendente"} />
-        <StatCard label="Prioridade crítica" value={counts.critica}
+      {/* ── stat cards (faixas de priority_score) ─────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Críticas" value={counts.critica}
           accent={counts.critica > 0 ? "text-red-600" : undefined}
-          sub="pendentes críticas" />
-        <StatCard label="Concluídas" value={counts.concluida}
-          accent="text-teal-600" sub="executadas com sucesso" />
-        <StatCard label="Com falha" value={counts.falhou}
-          accent={counts.falhou > 0 ? "text-destructive" : undefined}
-          sub="precisam de revisão" />
+          sub="score ≥ 20" />
+        <StatCard label="Alta prioridade" value={counts.alta}
+          accent={counts.alta > 0 ? "text-orange-600" : undefined}
+          sub="score 12–19" />
+        <StatCard label="Média prioridade" value={counts.media}
+          accent={counts.media > 0 ? "text-yellow-600" : undefined}
+          sub="score 6–11" />
+        <StatCard label="Baixa prioridade" value={counts.baixa}
+          accent={counts.baixa > 0 ? "text-emerald-600" : undefined}
+          sub="score 1–5" />
+        <StatCard label="Aguardando humano" value={counts.humano}
+          accent={counts.humano > 0 ? "text-orange-600" : undefined}
+          sub="exigem aprovação" />
       </div>
 
       {/* ── tabs ──────────────────────────────────────────────────────────── */}
@@ -382,12 +456,14 @@ export default function TarefasIAPage() {
               <thead>
                 <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                   <th className="px-4 py-3 w-6" />
-                  <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Prioridade</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Tarefa</th>
                   <th className="px-4 py-3 font-medium">Cliente</th>
-                  <th className="px-4 py-3 font-medium">Tipo</th>
-                  <th className="px-4 py-3 font-medium">Criada em</th>
+                  <th className="px-4 py-3 font-medium text-center">Impacto</th>
+                  <th className="px-4 py-3 font-medium text-center">Urgência</th>
+                  <th className="px-4 py-3 font-medium text-center">Exige Humano</th>
+                  <th className="px-4 py-3 font-medium">Próxima Ação</th>
                   <th className="px-4 py-3 font-medium">Ação</th>
                 </tr>
               </thead>
