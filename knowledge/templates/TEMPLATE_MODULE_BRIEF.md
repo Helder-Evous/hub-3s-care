@@ -1,0 +1,24 @@
+# Brief de Módulo — Hub 3S
+
+- Nome:
+- Área: Clientes / Operações / Gestão
+- Produto relacionado:
+- Responsável operacional:
+- Problema que resolve:
+- Usuário principal:
+- Cliente/entidade mestre:
+- Dados que lê:
+- Dados que grava:
+- Entidades/tabelas:
+- Eventos que gera:
+- Tarefas de IA que gera:
+- Próxima ação padrão:
+- Ações que exigem aprovação:
+- Indicadores:
+- Integrações:
+- Dados sensíveis:
+- Telas/rotas:
+- Critérios de aceite:
+- Riscos:
+- Dependências:
+- Plano de teste:
