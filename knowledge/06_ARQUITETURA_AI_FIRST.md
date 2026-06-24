@@ -1,7 +1,7 @@
 ---
 documento: 06_ARQUITETURA_AI_FIRST
-versao: 1.0
-data: 2026-06-22
+versao: 1.1
+data: 2026-06-24
 classificacao: L0 — Fundacional
 ---
 
@@ -51,25 +51,33 @@ Registra o que foi aprovado, rejeitado, corrigido e aprendido.
 1. `knowledge_base`
 2. `ai_approvals`
 3. `ai_executions`
-4. `decision_feedback`
-5. `organizational_memory`
-6. `command_inbox`
-7. `conversations` e `conversation_messages`
-8. integrações WhatsApp/Telegram/Kommo/Meta/financeiro
-9. IA Supervisor
-10. agentes especializados.
+4. orquestração de processos longos (sequências, dependências, prazos, estado)
+5. catálogo de ferramentas, integrações e permissões
+6. automação controlada de navegador (último recurso técnico antes do humano)
+7. `decision_feedback`
+8. `organizational_memory`
+9. `command_inbox`
+10. `conversations` e `conversation_messages`
+11. integrações WhatsApp/Telegram/Kommo/Meta/financeiro
+12. IA Supervisor
+13. agentes especializados por domínio
 
 ## 5. Agentes futuros
 
 - Agente de Onboarding
 - Agente Financeiro
 - Agente Comercial
+- Agente de Contratos
 - Agente CRM/WhatsApp
+- Agente de Tráfego Pago
 - Agente de Mídias/Campanhas
 - Agente de Qualidade Operacional
+- Agente de Conhecimento
 - IA Supervisor Central
 
 Todos usam a mesma Constituição, leem apenas a informação necessária e registram eventos/tarefas/auditoria.
+
+A IA Supervisor distribui e acompanha trabalho entre agentes. Não substitui as regras de autorização e nunca autoriza a própria ação.
 
 ## 6. Autonomia progressiva
 
@@ -91,3 +99,11 @@ Definições:
 - A IA **não promove automaticamente** uma proposta para conhecimento oficial. A promoção exige aprovação humana (Helder ou Jefferson) e Pull Request.
 - A IA nunca escreve diretamente na Knowledge Base oficial nem na `main`.
 - `organizational_memory` e `decision_feedback` serão construídos posteriormente; até lá, decisões aprovadas são registradas manualmente em `11_ORGANIZATIONAL_MEMORY.md` via PR.
+
+## 8. Modelo operacional agêntico
+
+Uma sessão do Claude Code pode construir e manter o sistema, mas não deve ser o executor permanente da operação. A execução contínua deve viver em agentes, serviços, workers, filas e integrações controlados pelo Hub.
+
+Para o modelo completo de execução ponta a ponta, automação agêntica, meios de execução, aprendizado e requisitos por módulo, ver:
+
+`knowledge/14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md`

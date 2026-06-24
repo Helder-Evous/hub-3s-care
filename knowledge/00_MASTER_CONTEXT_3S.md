@@ -1,7 +1,7 @@
 ---
 documento: 00_MASTER_CONTEXT_3S
-versao: 1.0
-data: 2026-06-22
+versao: 1.1
+data: 2026-06-24
 classificacao: L0 — Fundacional
 proprietario: Direção 3S
 revisao: trimestral ou diante de mudança estratégica
@@ -75,3 +75,11 @@ Já existem: autenticação, clientes, nova contratação, produtos contratados,
 - Supabase principal é a fonte de verdade de dados operacionais.
 - A pasta `/knowledge` é a fonte de verdade do conhecimento institucional.
 - Stack, organização de código e fluxo de migration: `knowledge/13_ARQUITETURA_TECNICA.md`.
+
+## 10. Visão de destino
+
+A 3S pretende operar de forma amplamente automatizada por agentes de IA. O Hub é a infraestrutura que permite à IA compreender, coordenar, executar, verificar e melhorar os processos da empresa com segurança e rastreabilidade.
+
+A meta é que agentes especializados conduzam os processos padronizáveis ponta a ponta — da captação do lead à renovação do contrato — enquanto humanos supervisionam estratégia, exceções e decisões irreversíveis.
+
+Ver: `knowledge/14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md`

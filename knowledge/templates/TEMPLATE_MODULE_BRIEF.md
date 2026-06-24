@@ -22,3 +22,17 @@
 - Riscos:
 - Dependências:
 - Plano de teste:
+
+## Automação e execução agêntica
+
+- Processo manual / gargalo reduzido:
+- Evento iniciador:
+- Agente responsável:
+- Ferramentas e integrações necessárias:
+- Nível de autonomia (1–5):
+- Regra de idempotência:
+- Verificação do resultado real:
+- Evidência armazenada:
+- Estratégia de retry / compensação / rollback em falha:
+- Indicadores de automação:
+- Feedback que pode gerar proposta de melhoria:

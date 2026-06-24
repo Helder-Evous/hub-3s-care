@@ -43,3 +43,18 @@ Nenhum módulo novo pode nascer isolado. Todo módulo deve se conectar ao Hub po
 - Não acoplar módulo a uma pessoa específica: usar responsáveis configuráveis.
 - Não usar service role no frontend.
 - Não executar ação externa sensível sem política e trilha de auditoria.
+
+## Requisitos agênticos obrigatórios
+
+Todo módulo novo deve também atender ao modelo operacional agêntico definido em `knowledge/14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md` §9. Além do checklist acima, o módulo deve definir:
+
+- agente responsável pela execução automática;
+- ferramentas e integrações necessárias;
+- nível de autonomia (1–5);
+- regra de idempotência;
+- como o resultado real será verificado;
+- evidência que será armazenada;
+- estratégia de retry, compensação ou rollback em falha;
+- indicadores de automação e resultado.
+
+Um módulo que não responder a essas questões não está pronto para execução agêntica e deve registrar esse gap em `knowledge/12_GAPS_E_VALIDACOES.md`.

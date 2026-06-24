@@ -1,7 +1,7 @@
 ---
 documento: 10_ROADMAP_DO_HUB
-versao: 1.0
-data: 2026-06-22
+versao: 1.1
+data: 2026-06-24
 classificacao: L0 — Fundacional
 ---
 
@@ -36,13 +36,24 @@ classificacao: L0 — Fundacional
 8. Sincronizar documentos aprovados para consulta da IA.
 9. Posteriormente, criar `organizational_memory` e `decision_feedback`.
 
-## Próximo bloco: inteligência
+## Visão de destino
+
+A 3S pretende operar de forma amplamente automatizada por agentes de IA, com execução ponta a ponta dos processos padronizáveis, escalando exceções para humanos.
+
+Ver: `knowledge/14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md`
+
+## Próximo bloco: inteligência e execução agêntica
 
 1. `ai_approvals`.
 2. `ai_executions`.
-3. IA Supervisor em modo sugestão.
-4. Primeiro agente de onboarding.
-5. Primeiro agente de alerta operacional CRM.
+3. Orquestração de processos longos.
+4. Catálogo de ferramentas, permissões e políticas.
+5. IA Supervisor em modo sugestão.
+6. Primeiro agente de onboarding.
+7. Primeiro agente operacional CRM.
+8. Integrações prioritárias (WhatsApp, Kommo, Meta).
+9. Navegador controlado para sistemas sem API.
+10. Autonomia progressiva por evidência.
 
 ## Próximo bloco: canais de comando e conversa
 
