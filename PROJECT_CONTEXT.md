@@ -7,9 +7,10 @@
 >
 > **`knowledge/AI_BOOTSTRAP_CONTEXT.md`**
 >
-> Este arquivo não deve ser removido nem atualizado. Ele preserva decisões tomadas durante
-> a fase inicial do projeto e serve como referência histórica para entender a origem da
-> arquitetura atual.
+> Este arquivo não é mais uma fonte viva de conhecimento. Somente deve ser atualizado quando
+> for necessário corrigir seus redirecionamentos, classificação histórica ou referências para
+> a Knowledge Base. Ele preserva decisões tomadas durante a fase inicial do projeto e serve
+> como referência histórica para entender a origem da arquitetura atual.
 
 ---
 

@@ -42,3 +42,9 @@ Registrar decisões relevantes em formato curto:
 ### 2026-06-22 — Trabalho em paralelo
 **Decisão:** Helder mantém arquitetura e conhecimento; Jefferson acelera módulos operacionais em branches próprias.  
 **Motivo:** reduzir gargalo do fundador sem fragmentar o Hub.
+
+### 2026-06-24 — Pipeline de Governança do Conhecimento
+**Decisão:** a 3S não utilizará um terceiro chat como memória oficial. Será construído um Pipeline de Governança do Conhecimento que detecta mudanças, classifica informações, gera propostas, exige aprovação quando necessária e publica alterações oficiais por Pull Request.  
+**Motivo:** reduzir alimentação manual sem permitir que a IA transforme ideias, conversas ou inferências em políticas oficiais.  
+**Responsáveis pela aprovação na fase inicial:** Helder ou Jefferson.  
+**Impacto:** `ai_tasks` permanece como fila única; `knowledge_change_proposals` será uma estrutura de propostas e evidências; `organizational_memory` e `decision_feedback` estruturados serão construídos posteriormente.

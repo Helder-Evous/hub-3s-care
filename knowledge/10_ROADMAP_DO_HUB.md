@@ -24,13 +24,17 @@ classificacao: L0 — Fundacional
 - módulo CRM com base de Chips e Canais;
 - integração inicial Supabase/GitHub/Claude Code/Lovable.
 
-## Próximo bloco: memória e governança
+## Próximo bloco: memória e governança do conhecimento
 
-1. Consolidar `/knowledge`.
-2. Criar `knowledge_base` no Hub.
-3. Criar cadastro mestre de pessoas/responsáveis.
-4. Criar políticas de aprovação.
-5. Criar `organizational_memory` e `decision_feedback`.
+1. Consolidar `/knowledge`. — **concluído após merge deste PR**
+2. Resolver e incorporar o conteúdo válido do `PROJECT_CONTEXT.md`. — **concluído após merge deste PR**
+3. Tornar o processamento de `system_events` confiável no backend.
+4. Criar `knowledge_change_proposals`.
+5. Adicionar `revisar_conhecimento` em `ai_tasks`.
+6. Criar tela de revisão, edição, aprovação e rejeição de propostas.
+7. Gerar Pull Request após aprovação.
+8. Sincronizar documentos aprovados para consulta da IA.
+9. Posteriormente, criar `organizational_memory` e `decision_feedback`.
 
 ## Próximo bloco: inteligência
 

@@ -14,5 +14,5 @@ Regras inegociáveis:
 - Não criar módulo isolado: siga o contrato de módulo e defina entidades, eventos, tarefas, indicadores, integrações e responsável.
 - Não alterar banco de dados sem migration, RLS e validação.
 - Nunca colocar credenciais, service role, senhas ou dados pessoais sensíveis no front-end, código versionado ou documentos públicos.
-- Registre decisões organizacionais relevantes em `knowledge/11_ORGANIZATIONAL_MEMORY.md`.
+- Decisões relevantes não entram diretamente na memória oficial. Ideias, hipóteses, sugestões e propostas não são decisões aprovadas. Ao identificar uma possível decisão relevante, prepare uma proposta de registro; a decisão só entra em `knowledge/11_ORGANIZATIONAL_MEMORY.md` após autorização explícita de Helder ou Jefferson, sempre via branch e Pull Request. A IA nunca pode alterar diretamente a `main` nem autorizar a própria proposta. Enquanto o pipeline automático de governança do conhecimento não existir, só registre decisão quando a autorização estiver explícita na conversa ou tarefa atual.
 - Ao encontrar lacunas, consulte `knowledge/12_GAPS_E_VALIDACOES.md`; não preencha com suposições.

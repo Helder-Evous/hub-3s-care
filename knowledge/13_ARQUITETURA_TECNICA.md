@@ -26,7 +26,7 @@ origem: incorporado de PROJECT_CONTEXT.md §5, §6 e §8 (2026-06-04)
 | **Bun** | Package manager e runtime. |
 | **GitHub** | Versionamento. Integração com Claude Code (desenvolvimento) e Lovable (visualização/espelho via GitHub Action em `main`). |
 | **Claude Code** | Agente de desenvolvimento no repositório real. |
-| **Lovable** | Plataforma de visualização e espelho do projeto. Recebe push de `main` via GitHub Action. |
+| **Lovable** | Plataforma de visualização e espelho do projeto. Sincronização confirmada via GitHub Action `.github/workflows/mirror-to-lovable.yml`, que faz push de `main` para o repositório espelho `Helder-Evous/custom-data-buddy` a cada push em `main`. |
 
 ## 2. Ambientes Supabase
 

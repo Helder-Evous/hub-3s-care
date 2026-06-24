@@ -77,3 +77,17 @@ Fase 1: sugerir e pedir aprovação.
 Fase 2: executar rotinas reversíveis e monitoradas.  
 Fase 3: executar padrões autorizados com auditoria e amostragem humana.  
 Fase 4: propor melhoria de regra baseada em evidência; promoção somente com aprovação.
+
+## 7. Pipeline de Governança do Conhecimento
+
+A Knowledge Base oficial não é alimentada manualmente nem escrita diretamente pela IA. O fluxo aprovado é:
+
+`mudança real → system_events → processamento confiável → classificação → knowledge_change_proposals → ai_tasks/revisar_conhecimento → aprovação → Pull Request → sincronização da Knowledge Base`
+
+Definições:
+
+- `ai_tasks` permanece como **fila única de trabalho**. A revisão de conhecimento entra nessa fila como tarefa do tipo `revisar_conhecimento`.
+- `knowledge_change_proposals` guarda **propostas e evidências**, não é uma fila concorrente de trabalho.
+- A IA **não promove automaticamente** uma proposta para conhecimento oficial. A promoção exige aprovação humana (Helder ou Jefferson) e Pull Request.
+- A IA nunca escreve diretamente na Knowledge Base oficial nem na `main`.
+- `organizational_memory` e `decision_feedback` serão construídos posteriormente; até lá, decisões aprovadas são registradas manualmente em `11_ORGANIZATIONAL_MEMORY.md` via PR.
