@@ -69,7 +69,9 @@ Já existem: autenticação, clientes, nova contratação, produtos contratados,
 
 - Repositório oficial: `hub-3s-care`.
 - Espelho de visualização: `custom-data-buddy` (Lovable).
-- Supabase oficial: `nndvcsdevbxpgsccyimm`.
+- Supabase DEV: `xcqfdnymadeqeuacqotu` (desenvolvimento e testes).
+- Supabase principal: `nndvcsdevbxpgsccyimm` (produção).
 - GitHub é a fonte de verdade do código.
-- Supabase é a fonte de verdade de dados operacionais.
+- Supabase principal é a fonte de verdade de dados operacionais.
 - A pasta `/knowledge` é a fonte de verdade do conhecimento institucional.
+- Stack, organização de código e fluxo de migration: `knowledge/13_ARQUITETURA_TECNICA.md`.
