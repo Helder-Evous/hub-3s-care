@@ -83,14 +83,22 @@ Praticamente nada para processamento: sem Edge Functions, sem workers, sem cron,
 
 ## 5. Proposta mínima recomendada
 
-Menor modelo que resolve o problema sem complexidade antecipada: **B + C combinados** — *outbox confiável no banco* + *Edge Function agendada com locking*, mantendo `ai_tasks` como fila única.
+Menor modelo que resolve o problema sem complexidade antecipada: **Outbox transacional em `system_events` + Edge Function agendada + RPC PostgreSQL transacional e idempotente**, mantendo `ai_tasks` como fila única.
 
-1. **Garantir a gravação do evento no backend**, não no navegador: o evento deve ser escrito junto da operação de negócio (server function/transação), eliminando o fire-and-forget como caminho único.
-2. **Processador idempotente agendado** (Edge Function via cron) que:
-   - seleciona eventos pendentes com `FOR UPDATE SKIP LOCKED`;
-   - cria tarefa(s) conforme `EVENT_TO_TASK_TYPES`;
-   - marca o evento como processado;
-   - em falha, agenda retry com backoff; após o limite, marca dead-letter.
+### Fluxo em 5 passos
+
+1. **A operação de negócio é executada no backend** (server function ou RPC): a escrita do dado de negócio e a inserção do evento em `system_events` ocorrem **na mesma transação PostgreSQL**, eliminando o fire-and-forget do navegador como caminho de registro.
+2. **`system_events` é o outbox**: nenhum trigger adicional é necessário para o MVP — a presença do evento com `status='pending'` já é o sinal de trabalho pendente.
+3. **Cron do Supabase dispara a Edge Function** em intervalo definido (ex.: a cada minuto).
+4. **A Edge Function chama um RPC PostgreSQL**: controla tamanho do lote, métricas e observabilidade, mas **não abre nem encerra transação diretamente**. A responsabilidade transacional é inteiramente do RPC.
+5. **O RPC PostgreSQL executa atomicamente**:
+   - abre transação;
+   - captura o lote de eventos pendentes com `FOR UPDATE SKIP LOCKED` (garante que dois processadores paralelos não processem o mesmo evento);
+   - cria tarefa(s) de forma idempotente (`INSERT ... ON CONFLICT DO NOTHING` com `unique(event_id, task_type)`);
+   - atualiza `system_events` para `processed` (ou `retry_wait`/`failed_permanent` em falha);
+   - faz `COMMIT` — todas as escritas são confirmadas juntas ou nenhuma é.
+
+Erros dentro do RPC causam `ROLLBACK` automático: o evento volta a `pending`, o processador retenta na próxima janela.
 
 ### Estruturas a avaliar (não assumir que todas serão necessárias)
 
@@ -187,7 +195,7 @@ Migração de compatibilidade: o boolean `processed` atual mapeia para `pending`
 - `system_events` já tem `processed`/`processed_at`/`error_message` e índice parcial, mas nada os usa.
 - `ai_tasks` liga-se a evento apenas por `source_event_type` (texto), sem `event_id`.
 - **Drift de migrations:** a migration `create_system_events` (aplicada no PROD em 20260605143042) **não está no repositório**; a suíte CRM `crm_001..011` (aplicada no PROD em 2026-06-23) também não está no repo; os números das migrations de `ai_tasks` divergem (repo `20260619000001/2` vs aplicado `20260619204324/204335`).
-- **Ambiente DEV vazio:** `xcqfdnymadeqeuacqotu` tem apenas a tabela `clinics` no schema `public`; **não possui `system_events` nem `ai_tasks`**, nem as migrations base. O CRM passou por DEV; a fundação de eventos/tarefas não.
+- **Estado do DEV:** `xcqfdnymadeqeuacqotu` possui o scaffold `public.clinics` e a suíte CRM completa no schema `crm` (migrations `crm_001..011`, já validadas por Jefferson). **Não possui** `system_events` nem `ai_tasks` nem a fundação pública de clientes, vendas e onboardings. O DEV, portanto, **não representa estruturalmente o ambiente principal para essa fundação**; representa apenas o trabalho CRM.
 - Advisors de segurança: RLS permissiva (`USING/ WITH CHECK true`) em `ai_tasks_insert/update` e `system_events_insert`.
 
 ### Hipóteses
@@ -199,11 +207,55 @@ Migração de compatibilidade: o boolean `processed` atual mapeia para `pending`
 - Adicionar `event_id` em `ai_tasks` + idempotência por `unique(event_id, task_type)`.
 - Introduzir estados de processamento e retry/backoff/dead-letter.
 
+### Recomendações de arquitetura (para embasar as decisões)
+
+**Estados de processamento:** migrar de `processed` (boolean) para um enum de status (`pending`, `processing`, `processed`, `retry_wait`, `failed_permanent`) é preferível: permite locking cooperativo explícito, observabilidade granular e dead-letter sem tabela extra.
+
+**Ligação evento → tarefa:** adicionar `event_id uuid REFERENCES system_events(id)` em `ai_tasks` e constraint `unique(event_id, task_type)` fecha a cadeia de rastreabilidade e garante idempotência sem lógica adicional.
+
+**Drift de migrations:** o desvio entre repo e PROD deve ser reconciliado antes de qualquer nova migration: (a) trazer para `supabase/migrations/` as migrations já aplicadas (`create_system_events`, suíte CRM, ai_tasks com versão real); (b) não reatribuir números diferentes dos aplicados; (c) não recriar objetos existentes — apenas documentar o estado real.
+
+**Alinhamento do DEV:** reconstruir o DEV é necessário antes de validar a fundação de eventos, mas deve ser **alinhamento estrutural aditivo e não destrutivo**. "Reconstruir" não significa reset, DROP ou remoção de objetos existentes. Significa aplicar, em ordem, as migrations faltantes (fundação pública + system_events + ai_tasks), preservando integralmente o schema `crm` e todas as migrations `crm_001..011`. Qualquer plano de alinhamento do DEV deve ser apresentado com inventário prévio, checklist de compatibilidade CRM e plano de rollback antes da execução.
+
+**RLS:** endurecer `ai_tasks` INSERT/UPDATE (hoje `USING true`) para restringir a `authenticated` com escopo real; revisão de `system_events_insert` por tipo de `source`.
+
+### Proteção do trabalho CRM de Jefferson
+
+O schema `crm` no DEV (`xcqfdnymadeqeuacqotu`) e no PROD (`nndvcsdevbxpgsccyimm`) é **ativo protegido**. As migrations `crm_001` a `crm_011` representam trabalho concluído e validado por Jefferson.
+
+**São estritamente proibidas**, sem autorização explícita de Jefferson ou Helder documentada em branch e Pull Request:
+
+- `reset_branch` no DEV ou qualquer ação equivalente a limpar o ambiente;
+- `DROP SCHEMA crm` ou qualquer DROP de objeto CRM;
+- `DROP TABLE`, `DROP COLUMN`, `DROP TYPE`, `DROP FUNCTION` de qualquer objeto CRM;
+- exclusão, renomeação ou reordenação das migrations `crm_001..011`;
+- alteração destrutiva de enums, sequences ou constraints CRM;
+- alteração de grants, RLS ou autenticação do schema `crm`;
+- reexecução das migrations CRM em qualquer ambiente;
+- recriação de objetos CRM com definições divergentes das originais;
+- force push em branch de Jefferson;
+- qualquer mudança no DEV ou no PROD que afete objetos CRM sem plano aprovado.
+
+**O alinhamento futuro do DEV** deve ser verificado contra o seguinte checklist antes de qualquer execução:
+
+1. Listar todos os objetos do schema `crm` (tabelas, funções, enums, triggers, policies).
+2. Listar todas as migrations `crm_001..011` aplicadas e seu conteúdo real.
+3. Confirmar que nenhuma migration nova cria objeto com nome conflitante no schema `crm`.
+4. Confirmar que nenhuma migration nova altera `search_path`, grants globais ou autenticação de forma que afete o schema `crm`.
+5. Confirmar que objetos do schema `public` a adicionar não têm FK ou dependência para o schema `crm` sem autorização explícita.
+6. Confirmar que o alinhamento do DEV é inteiramente aditivo (ADD TABLE, ADD COLUMN, ADD FUNCTION no `public`).
+7. Confirmar que não há `DROP`, `ALTER TYPE ... RENAME`, `ALTER SEQUENCE` ou qualquer operação destrutiva.
+8. Confirmar que as policies RLS novas não afetam roles ou grants do `crm`.
+9. Confirmar que não há migration que recrie tabela já existente no `crm` (mesmo com nome diferente, se semanticamente equivalente).
+10. Executar `SELECT * FROM information_schema.tables WHERE table_schema = 'crm'` antes e depois do alinhamento e comparar.
+11. Executar validação de integridade referencial entre `public` e `crm` após alinhamento.
+12. Manter plano de rollback: script SQL que desfaz apenas as adições no `public`, sem tocar no `crm`.
+
 ### Decisões necessárias de Helder ou Jefferson
-1. Estados de `system_events`: manter boolean `processed` + colunas auxiliares, ou migrar para enum de status?
-2. Arquitetura do processador: Edge Function agendada (recomendado) vs trigger/outbox vs server function?
+1. Estados de `system_events`: manter boolean `processed` + colunas auxiliares, ou migrar para enum de status? (recomendado: enum)
+2. Arquitetura do processador: Edge Function agendada + RPC transacional (recomendado) vs alternativas?
 3. Reconciliar o drift: trazer para o repo as migrations aplicadas (`create_system_events`, CRM, ai_tasks com versão real) antes de qualquer nova migration?
-4. Reconstruir o DEV como espelho real do PROD (aplicar todas as migrations) antes de validar a fundação de eventos?
+4. Alinhar o DEV de forma aditiva (aplicar migrations faltantes no `public`) antes de validar a fundação de eventos?
 5. Endurecer a RLS permissiva de `ai_tasks`/`system_events` apontada pelos advisors?
 
 ### Não autorizado nesta tarefa
