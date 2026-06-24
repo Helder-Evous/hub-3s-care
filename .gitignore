@@ -16,8 +16,13 @@ dist-ssr
 .nitro
 *.local
 
-# Claude Code
-.claude/
+# Claude Code (ignora tudo, exceto a skill versionada da Knowledge Base 3S)
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/3s-hub-ai-first/
+.claude/skills/3s-hub-ai-first/*
+!.claude/skills/3s-hub-ai-first/SKILL.md
 
 # Variáveis de ambiente — nunca versionar valores reais
 .env
@@ -39,3 +44,6 @@ dist-ssr
 *.sln
 *.sw?
 package-lock.json
+
+# Knowledge Base restrita — nunca versionar no repositório geral
+knowledge/restricted/
