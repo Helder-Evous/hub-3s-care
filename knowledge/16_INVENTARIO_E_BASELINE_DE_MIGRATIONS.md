@@ -1,16 +1,18 @@
 ---
 documento: 16_INVENTARIO_E_BASELINE_DE_MIGRATIONS
-versao: 0.1-draft
+versao: 1.0
 data: 2026-06-25
 classificacao: L1 — Operacional/Técnico
 proprietario: Helder e Jefferson
-status: Proposta — aguardando aprovação
+status: Inventário aprovado
 implementacao: não autorizada
 ---
 
 # Inventário e Baseline de Migrations
 
 > **Documento de auditoria exclusiva. Nenhuma implementação, migration, alteração de banco, schema, dados, RLS, grants, autenticação, Edge Function ou código está autorizada por este documento.**
+
+> **Nota de aprovação.** Este inventário e a Etapa A de preservação documental foram aprovados. A aprovação não autoriza canonicalização, migration repair, alteração de histórico, aplicação de migrations ou mudanças nos ambientes.
 
 ## 1. Objetivo
 
