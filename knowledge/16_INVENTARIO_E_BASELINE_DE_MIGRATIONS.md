@@ -42,9 +42,9 @@ Consultas realizadas em 2026-06-25. Somente metadados e contagens; nenhum dado p
 | 5 | `20260604000004_add_indexes.sql` | Índices de performance | `public`: índices em `clinics`, `channels`, `alerts`, `audit_logs`, etc. | Aditiva | Sim — versão `20260604135500` no PROD |
 | 6 | `20260604000005_add_clinic_scores_view.sql` | View de scores por clínica | `public`: view `vw_clinic_scores` | Aditiva | Sim — versão `20260604135513` no PROD |
 | 7 | `20260604133039_e7560ffe...sql` | Revogação do acesso anônimo (Lovable security agent) | `public`: REVOKE SELECT FROM anon, RLS provisória | Restritiva | Sim — mesma versão `20260604133039` |
-| 8 | `20260604185143_716bbe07...sql` | ADD COLUMN em `clinics` (nome_fantasia, razao_social, cnpj, phone...) | `public.clinics` | Aditiva | **Não confirmada — ausente no PROD** |
+| 8 | `20260604185143_716bbe07...sql` | ADD COLUMN em `clinics` (nome_fantasia, razao_social, cnpj, phone...) | `public.clinics` | Aditiva | **Versão não registrada no principal; efeitos estruturais presentes por caminho ainda não confirmado** (colunas `nome_fantasia`, `razao_social`, `cnpj`, `phone` existem no principal) |
 | 9 | `20260604200001_fase1_base_estrutural.sql` | Expansão de `clinics` e outras tabelas de negócio | `public`: `clinics`, `sales`, `clinic_products`, `onboardings`, `onboarding_steps`, `pending_approvals`, `ai_audit_log`, `contracts`, `charges`; enums `onboarding_status`, `product_type`, `step_status`, `data_origin`, `number_status`, `quality_rating`, `alert_status` | Aditiva | Sim — versão `20260604171237` no PROD (timestamp anterior ao do repo) |
-| 10 | `20260611002357_aab13a75...sql` | RLS para `sales`, `clinic_products`, `onboardings`, `charges`, `contracts` | `public`: policies de acesso | Aditiva/Alteração de policy | **Não confirmada — ausente no PROD** |
+| 10 | `20260611002357_aab13a75...sql` | RLS para `sales`, `clinic_products`, `onboardings`, `charges`, `contracts` | `public`: policies de acesso | Aditiva/Alteração de policy | **Versão não registrada no principal; efeitos estruturais presentes por caminho ainda não confirmado** (policies `sales: authenticated access`, `clinic_products: authenticated access`, `onboardings: authenticated access`, `charges: authenticated access`, `contracts: authenticated access` existem no principal) |
 | 11 | `20260619000001_create_ai_tasks.sql` | Criação de `ai_tasks`, enums `ai_task_status` e `ai_task_priority` | `public`: enums, tabela `ai_tasks`, índices, RLS | Aditiva | Sim — versão `20260619204324` no PROD |
 | 12 | `20260619000002_evolve_ai_tasks_priority.sql` | ADD COLUMN `impact_level`, `urgency_level`, `priority_score`, `confidence_score`, `source_event_type`, `requires_human`, `next_action` em `ai_tasks` | `public.ai_tasks` | Aditiva | Sim — versão `20260619204335` no PROD |
 
@@ -85,7 +85,7 @@ Consultas realizadas em 2026-06-25. Somente metadados e contagens; nenhum dado p
 **Schema `crm`:**
 - Tabelas (10): `appointments`, `budgets`, `lead_activities`, `lead_sources`, `lead_stage_history`, `leads`, `module_clinics`, `patients`, `user_profiles`, `user_units` — **estruturalmente equivalentes ao PROD**
 - Enums (8): `activity_type`, `appointment_status`, `budget_status`, `crm_role`, `lead_stage`, `patient_status`, `reconciliation_status`, `source_category` — **idênticos ao PROD**
-- Funções (13): `current_user_role`, `fn_handle_new_user`, `fn_normalize_patient`, `fn_recalc_lead_stage`, `fn_touch_lead_activity`, `fn_touch_updated_at`, `fn_trg_recalc_lead_stage`, `is_staff_3s`, `is_super_admin_3s`, `lead_stage_rank`, `module_enabled_for_clinic`, `user_can_manage_module`, `user_has_clinic_access` — **idênticas ao PROD**
+- Funções (13): `current_user_role`, `fn_handle_new_user`, `fn_normalize_patient`, `fn_recalc_lead_stage`, `fn_touch_lead_activity`, `fn_touch_updated_at`, `fn_trg_recalc_lead_stage`, `is_staff_3s`, `is_super_admin_3s`, `lead_stage_rank`, `module_enabled_for_clinic`, `user_can_manage_module`, `user_has_clinic_access` — **estrutural e semanticamente equivalentes ao principal; os registros históricos de algumas migrations possuem diferenças textuais**
 - Triggers (9 objetos): `trg_appointments_recalc_stage`, `trg_appointments_touch_updated_at`, `trg_budgets_recalc_stage`, `trg_budgets_touch_updated_at`, `trg_lead_activities_touch`, `trg_leads_recalc_stage_on_lost`, `trg_leads_touch_updated_at`, `trg_patients_normalize`, `trg_patients_touch_updated_at` — **idênticos ao PROD**. Estes 9 objetos de trigger aparecem como 12 linhas no `information_schema.triggers` porque alguns respondem a mais de um evento (ex.: `trg_appointments_recalc_stage`, `trg_budgets_recalc_stage` e `trg_patients_normalize` respondem a `INSERT` e `UPDATE`, gerando uma linha por evento).
 - Políticas RLS (25): completas por tabela CRM — **idênticas ao PROD**
 - Índices CRM: conjunto completo — **idêntico ao PROD**
@@ -366,7 +366,7 @@ Compara três opções; nenhuma é executada sem autorização:
 - reduz a capacidade de reconstruir um ambiente novo a partir do repositório;
 - serve apenas como solução temporária.
 
-**Recomendação provável: Opção 1**, por usar o ambiente principal (fonte de verdade em operação) como referência. Permanece, contudo, como **proposta pendente de aprovação** de Helder ou Jefferson — nada na Etapa B é executado sem autorização explícita.
+**Recomendação provável: Opção 1**, por usar o ambiente principal como referência. O ambiente principal é a referência do estado atualmente aplicado e do histórico registrado em operação. O GitHub permanece como fonte oficial do código, documentação e Knowledge Base após a canonicalização aprovada. Permanece, contudo, como **proposta pendente de aprovação** de Helder ou Jefferson — nada na Etapa B é executado sem autorização explícita.
 
 A recomendação **preserva o CRM, não reaplica objetos existentes, não falsifica histórico e não altera versões já registradas sem autorização**.
 
