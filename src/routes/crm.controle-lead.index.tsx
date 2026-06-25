@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlertTriangle, Inbox } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Toaster } from "@/components/ui/sonner";
 import { useLeadsBoard } from "@/features/crm/controle-lead/queries";
 import { LeadBoard } from "@/features/crm/controle-lead/components/LeadBoard";
 import { NewLeadModal } from "@/features/crm/controle-lead/components/NewLeadModal";
@@ -32,6 +33,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <Header />
         {children}
       </div>
+      <Toaster richColors position="top-right" />
     </AppShell>
   );
 }

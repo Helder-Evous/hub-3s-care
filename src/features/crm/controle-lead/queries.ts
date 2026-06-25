@@ -86,3 +86,54 @@ export function useLeadsBoard() {
     },
   });
 }
+
+/**
+ * Cliente PostgREST escopado ao schema `crm` (cast temporario ate o types.ts
+ * oficial public+crm; ver crm-types.ts). Reutilizado por queries e mutations.
+ */
+export function crmSchema() {
+  return (
+    supabase as unknown as {
+      schema: (s: string) => ReturnType<typeof supabase.from>;
+    }
+  ).schema("crm");
+}
+
+/** Catalogo de origens (lead_sources) para o seletor do modal "Novo Lead". */
+export function useLeadSources() {
+  return useQuery({
+    queryKey: ["crm", "controle-lead", "lead-sources"],
+    queryFn: async (): Promise<{ id: string; key: string; label: string }[]> => {
+      const { data, error } = await crmSchema()
+        .from("lead_sources")
+        .select("id, key, label")
+        .order("label", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as {
+        id: string;
+        key: string;
+        label: string;
+      }[];
+    },
+  });
+}
+
+/**
+ * Clinicas em que o operador pode criar leads: modulo habilitado (enabled=true)
+ * e com acesso (a RLS de module_clinics ja escopa por user_has_clinic_access).
+ */
+export function useEligibleClinics() {
+  return useQuery({
+    queryKey: ["crm", "controle-lead", "eligible-clinics"],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await crmSchema()
+        .from("module_clinics")
+        .select("clinic_id")
+        .eq("enabled", true);
+      if (error) throw error;
+      return ((data ?? []) as unknown as { clinic_id: string }[]).map(
+        (r) => r.clinic_id,
+      );
+    },
+  });
+}
