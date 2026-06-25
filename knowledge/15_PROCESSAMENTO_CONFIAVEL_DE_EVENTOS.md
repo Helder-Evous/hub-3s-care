@@ -166,12 +166,14 @@ Migração de compatibilidade: o boolean `processed` atual mapeia para `pending`
 ## 10. Plano de implementação futuro (não autorizado)
 
 1. Migration mínima: ligação `event_id` em `ai_tasks`, colunas de retry/status em `system_events`, constraint de idempotência.
-2. Processador backend (Edge Function) idempotente com `SKIP LOCKED`.
-3. Retry com backoff, timeout e limite + dead-letter.
-4. Integração com `ai_tasks` via `on conflict do nothing`.
-5. Painel de observabilidade (pendentes, idade, falhas).
-6. Testes de falha (queda no meio, duplo processador, retry).
-7. Validação no DEV.
+2. Edge Function agendada que chama uma RPC PostgreSQL transacional e idempotente; a RPC é responsável pelo claim do lote com `FOR UPDATE SKIP LOCKED`, criação das tarefas e atualização dos eventos. Todas as operações da RPC são executadas dentro de uma única transação PostgreSQL controlada pela chamada. Se ocorrer erro estrutural não tratado, toda a chamada é revertida.
+3. Tratamento de falhas diferenciado:
+   - **Falha esperada de um evento:** a RPC captura a falha daquele evento e persiste o incremento de `attempt_count`, `last_error`, `next_retry_at` e o status `retry_wait` ou `failed_permanent`. A falha de um evento não deve obrigatoriamente interromper o restante do lote.
+   - **Falha estrutural da RPC:** erro não tratado pode causar rollback da chamada inteira. Nenhum evento do lote deve ficar permanentemente marcado como `processing`; o mecanismo de lease/lock deve permitir nova tentativa na próxima janela do cron. O detalhamento final do mecanismo de lease será validado antes da implementação.
+4. Integração com `ai_tasks` via `INSERT ... ON CONFLICT DO NOTHING` com `unique(event_id, task_type)`.
+5. Painel de observabilidade (pendentes, idade, falhas, retries).
+6. Testes de falha (queda no meio, duplo processador, retry, rollback estrutural).
+7. Alinhamento estrutural aditivo e não destrutivo do DEV (preservando schema `crm` e migrations `crm_001..011`).
 8. Promoção para o principal com a mesma migration validada.
 
 ## 11. Critérios de aceite
@@ -215,7 +217,7 @@ Migração de compatibilidade: o boolean `processed` atual mapeia para `pending`
 
 **Drift de migrations:** o desvio entre repo e PROD deve ser reconciliado antes de qualquer nova migration: (a) trazer para `supabase/migrations/` as migrations já aplicadas (`create_system_events`, suíte CRM, ai_tasks com versão real); (b) não reatribuir números diferentes dos aplicados; (c) não recriar objetos existentes — apenas documentar o estado real.
 
-**Alinhamento do DEV:** reconstruir o DEV é necessário antes de validar a fundação de eventos, mas deve ser **alinhamento estrutural aditivo e não destrutivo**. "Reconstruir" não significa reset, DROP ou remoção de objetos existentes. Significa aplicar, em ordem, as migrations faltantes (fundação pública + system_events + ai_tasks), preservando integralmente o schema `crm` e todas as migrations `crm_001..011`. Qualquer plano de alinhamento do DEV deve ser apresentado com inventário prévio, checklist de compatibilidade CRM e plano de rollback antes da execução.
+**Alinhamento do DEV:** é necessário realizar o **alinhamento estrutural aditivo e não destrutivo do DEV** antes de validar a fundação de eventos. Isso significa aplicar, em ordem, as migrations faltantes (fundação pública + `system_events` + `ai_tasks`), preservando integralmente o schema `crm` e todas as migrations `crm_001..011`. Qualquer plano deve ser apresentado com inventário prévio, checklist de compatibilidade CRM e plano de rollback antes da execução.
 
 **RLS:** endurecer `ai_tasks` INSERT/UPDATE (hoje `USING true`) para restringir a `authenticated` com escopo real; revisão de `system_events_insert` por tipo de `source`.
 
