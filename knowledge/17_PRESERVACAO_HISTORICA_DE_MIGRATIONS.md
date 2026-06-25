@@ -57,7 +57,10 @@ Campos lidos de `schema_migrations`: `version`, `name`, `statements`, `rollback`
 - **Migrations registradas:** 12.
 - **Manifesto:** `knowledge/migration-history/dev/manifest.md`.
 - **Arquivos preservados:** 12 em `knowledge/migration-history/dev/statements/` (`.sql.txt`).
-- **Hashes:** registrados no manifesto; cada arquivo carrega o SHA-256 no cabeçalho.
+- **Hashes:** registrados no manifesto; cada arquivo carrega o SHA-256 no cabeçalho. O
+  hash cobre exclusivamente o conteúdo canônico entre os marcadores `BEGIN RAW STATEMENTS`
+  e `END RAW STATEMENTS`; cabeçalhos, marcadores e seção `ITEMIZED STATEMENTS` não
+  participam do hash.
 - **Rollback:** nenhuma migration possui conteúdo em `rollback`.
 - **Migrations CRM protegidas:** `crm_001..011` (DEV) preservadas como registro histórico,
   sem qualquer alteração — ativo de Jefferson.
@@ -68,7 +71,10 @@ Campos lidos de `schema_migrations`: `version`, `name`, `statements`, `rollback`
 - **Migrations registradas:** 23.
 - **Manifesto:** `knowledge/migration-history/principal/manifest.md`.
 - **Arquivos preservados:** 23 em `knowledge/migration-history/principal/statements/` (`.sql.txt`).
-- **Hashes:** registrados no manifesto; cada arquivo carrega o SHA-256 no cabeçalho.
+- **Hashes:** registrados no manifesto; cada arquivo carrega o SHA-256 no cabeçalho. O
+  hash cobre exclusivamente o conteúdo canônico entre os marcadores `BEGIN RAW STATEMENTS`
+  e `END RAW STATEMENTS`; cabeçalhos, marcadores e seção `ITEMIZED STATEMENTS` não
+  participam do hash.
 - **Rollback:** nenhuma migration possui conteúdo em `rollback`.
 - **Migrations ausentes no GitHub:** `fix_rls_recursive_hub_users` (`20260604184531`) e
   `create_system_events` (`20260605143042`) — agora preservadas a partir de `statements`.
@@ -168,9 +174,10 @@ duas versões. Elas permanecem como itens de investigação (§8 e doc 16 §7).
 - **Nenhum.** A varredura de segurança não encontrou senha, token, chave de API, secret,
   string de conexão com credencial, JWT ou chave privada. As ocorrências do termo
   `service_role` são **nome de role padrão do Supabase** em comandos `GRANT`, e
-  `access_token_hint` é **nome de coluna** — não há valores sensíveis. `created_by` contém
-  apenas o e-mail corporativo do proprietário do projeto (`gestao@evousmidia.com`), já
-  presente na configuração do projeto, não um dado pessoal de cliente.
+  `access_token_hint` é **nome de coluna** — não há valores sensíveis. `created_by`
+  contém um identificador corporativo de auditoria. Esse valor não foi incluído nos
+  arquivos históricos, manifestos ou cabeçalhos, por não ser necessário para a preservação
+  documental.
 
 ## 9. Próxima decisão (Etapa B — não executada aqui)
 

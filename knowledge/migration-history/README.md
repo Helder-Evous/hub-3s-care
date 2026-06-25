@@ -45,9 +45,12 @@ migration-history/
 
 ## Integridade (SHA-256)
 
-O hash de cada arquivo cobre o conteúdo bruto de `statements` — os itens do array unidos
-por LF (U+000A), na ordem original, sem newline final. É o mesmo valor calculado no banco
-com `encode(digest(array_to_string(statements, E'\n'),'sha256'),'hex')`, permitindo
+O SHA-256 registrado em cada arquivo não é o hash do arquivo `.sql.txt` completo. Ele
+cobre exclusivamente o conteúdo canônico de `statements` localizado entre os marcadores
+`BEGIN RAW STATEMENTS` e `END RAW STATEMENTS`: itens do array unidos por LF, na ordem
+original e sem newline final. Os cabeçalhos, os próprios marcadores e a seção
+`ITEMIZED STATEMENTS` (quando presente) não participam do hash. É o mesmo valor calculado
+no banco com `encode(digest(array_to_string(statements, E'\n'),'sha256'),'hex')`, permitindo
 verificar a fidelidade da preservação a qualquer momento.
 
 Para migrations com mais de um item em `statements` (apenas `20260529143328` no principal,
