@@ -84,6 +84,16 @@ export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
   outro: "Outro",
 };
 
+/** Opcoes ordenadas para o seletor de tipo no modal "Nova atividade". */
+export const ACTIVITY_TYPE_OPTIONS: { value: ActivityType; label: string }[] = [
+  { value: "ligacao", label: "Ligação" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "email", label: "E-mail" },
+  { value: "visita", label: "Visita" },
+  { value: "nota", label: "Nota" },
+  { value: "outro", label: "Outro" },
+];
+
 export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   agendado: "Agendado",
   confirmado: "Confirmado",

@@ -2,6 +2,7 @@
 // Supabase JS no schema crm, com a AUTENTICACAO NORMAL do operador (RLS aplica).
 // NUNCA usa service_role. NAO seta current_stage (derivado pelo dominio).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ActivityType } from "@/integrations/supabase/crm-types";
 import { crmSchema } from "./queries";
 
 /**
@@ -140,6 +141,59 @@ export function useCreateLead() {
       return { leadId, patientId, reusedPatient: reused };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "controle-lead", "board"],
+      });
+    },
+  });
+}
+
+// ----------------------------------------------------------------------------
+// Registro de atividade (crm.lead_activities) — somente INSERT, sob RLS.
+// Colunas reais: performed_by (= auth.uid()) e summary (observacao).
+// NAO escreve last_contact_at/last_activity_at: derivados pela trigger
+// crm.fn_touch_lead_activity (last_contact_at so p/ ligacao/whatsapp/email/visita).
+// ----------------------------------------------------------------------------
+export type CreateActivityInput = {
+  clinic_id: string;
+  lead_id: string;
+  patient_id: string;
+  performed_by: string;
+  activity_type: ActivityType;
+  summary: string | null;
+};
+
+export async function createLeadActivity(
+  input: CreateActivityInput,
+): Promise<string> {
+  const { data, error } = await crmSchema()
+    .from("lead_activities")
+    .insert({
+      clinic_id: input.clinic_id,
+      lead_id: input.lead_id,
+      patient_id: input.patient_id,
+      performed_by: input.performed_by,
+      activity_type: input.activity_type,
+      summary: input.summary,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (data as unknown as { id: string }).id;
+}
+
+/**
+ * Registra uma atividade e invalida detail + board para refletir o historico e
+ * os campos derivados (last_contact_at/last_activity_at) atualizados pela trigger.
+ */
+export function useCreateLeadActivity() {
+  const queryClient = useQueryClient();
+  return useMutation<string, unknown, CreateActivityInput>({
+    mutationFn: createLeadActivity,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "controle-lead", "detail"],
+      });
       queryClient.invalidateQueries({
         queryKey: ["crm", "controle-lead", "board"],
       });

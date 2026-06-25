@@ -1,20 +1,33 @@
 // Atividades do lead (crm.lead_activities): tipo, descricao, criado em.
-// Somente leitura.
+// Leitura + acao de registro (NewActivityModal). Sem edicao/exclusao.
 import { Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ACTIVITY_TYPE_LABELS } from "../labels";
 import { formatDateTime } from "../utils";
 import type { LeadActivityRow } from "../types";
+import { NewActivityModal } from "./NewActivityModal";
 
-export function LeadActivities({ rows }: { rows: LeadActivityRow[] }) {
+type Props = {
+  rows: LeadActivityRow[];
+  clinicId: string;
+  leadId: string;
+  patientId: string;
+};
+
+export function LeadActivities({ rows, clinicId, leadId, patientId }: Props) {
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Activity className="h-4 w-4 text-muted-foreground" />
           Atividades
         </CardTitle>
+        <NewActivityModal
+          clinicId={clinicId}
+          leadId={leadId}
+          patientId={patientId}
+        />
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (

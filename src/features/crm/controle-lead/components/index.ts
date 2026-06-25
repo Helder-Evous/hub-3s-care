@@ -12,3 +12,4 @@ export { LeadStageHistory } from "./LeadStageHistory";
 export { LeadActivities } from "./LeadActivities";
 export { LeadAppointments } from "./LeadAppointments";
 export { LeadBudgets } from "./LeadBudgets";
+export { NewActivityModal } from "./NewActivityModal";

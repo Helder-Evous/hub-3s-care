@@ -1,6 +1,7 @@
 // Container do detalhe do lead: 1 query agregada (sob RLS) + estados
 // (loading/erro/nao-encontrado) + composicao das secoes. Mantem a rota fina.
 import { AlertTriangle, SearchX } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 import { useLeadDetail } from "../queries";
 import { LeadDetailHeader } from "./LeadDetailHeader";
 import { LeadStageHistory } from "./LeadStageHistory";
@@ -58,10 +59,16 @@ export function LeadDetailView({ id }: { id: string }) {
       <LeadDetailHeader lead={data} />
       <div className="grid gap-4 lg:grid-cols-2">
         <LeadStageHistory rows={data.history} />
-        <LeadActivities rows={data.activities} />
+        <LeadActivities
+          rows={data.activities}
+          clinicId={data.clinic_id}
+          leadId={data.id}
+          patientId={data.patient_id}
+        />
         <LeadAppointments rows={data.appointments} />
         <LeadBudgets rows={data.budgets} />
       </div>
+      <Toaster richColors position="top-right" />
     </div>
   );
 }
