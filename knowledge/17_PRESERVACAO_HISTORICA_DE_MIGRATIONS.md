@@ -1,10 +1,10 @@
 ---
 documento: 17_PRESERVACAO_HISTORICA_DE_MIGRATIONS
-versao: 0.1-draft
+versao: 1.0
 data: 2026-06-25
 classificacao: L1 — Operacional/Técnico
 proprietario: Helder e Jefferson
-status: Preservação documental — aguardando revisão
+status: Preservação histórica aprovada
 implementacao: não autorizada
 ---
 
@@ -13,6 +13,11 @@ implementacao: não autorizada
 > **Documento de preservação documental. Esta tarefa NÃO canonicaliza o repositório,
 > não executa `migration repair`, não altera o diretório ativo `supabase/migrations/`
 > e não aplica nada nos bancos. É a Etapa A aprovada no documento 16.**
+
+> **Nota de aprovação.** A Etapa A de preservação documental foi concluída e aprovada. Os
+> históricos do DEV e do principal foram preservados como evidência auditável. Esta
+> aprovação não escolhe um histórico canônico e não autoriza a Etapa B, `migration repair`,
+> alteração de `schema_migrations`, aplicação de migrations ou mudanças nos ambientes.
 
 ## 1. Objetivo
 
