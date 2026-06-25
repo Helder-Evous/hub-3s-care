@@ -1,6 +1,13 @@
 // Tipos de UI do modulo Controle de Lead (dominio CRM).
 // Derivados dos tipos do schema crm (temporariamente em crm-types.ts).
-import type { CrmTables, LeadStage } from "@/integrations/supabase/crm-types";
+import type {
+  CrmTables,
+  LeadStage,
+  PatientStatus,
+  ActivityType,
+  AppointmentStatus,
+  BudgetStatus,
+} from "@/integrations/supabase/crm-types";
 
 export type LeadStageValue = LeadStage;
 
@@ -39,4 +46,66 @@ export type LeadBoardColumn = {
   stage: LeadStage;
   label: string;
   cards: LeadBoardCard[];
+};
+
+// ----------------------------------------------------------------------------
+// Detalhe do Lead (somente leitura) — tipos ja mapeados para a UI.
+// ----------------------------------------------------------------------------
+
+export type LeadStageHistoryRow = {
+  id: string;
+  from_stage: LeadStage | null;
+  to_stage: LeadStage;
+  changed_at: string;
+  changed_by: string | null;
+  reason: string | null;
+  source_table: string | null;
+};
+
+export type LeadActivityRow = {
+  id: string;
+  activity_type: ActivityType;
+  summary: string | null;
+  occurred_at: string;
+  created_at: string;
+};
+
+export type LeadAppointmentRow = {
+  id: string;
+  scheduled_at: string;
+  status: AppointmentStatus;
+  attended_at: string | null;
+  confirmed_at: string | null;
+};
+
+export type LeadBudgetRow = {
+  id: string;
+  total_amount: number | null;
+  currency: string;
+  status: BudgetStatus;
+  presented_at: string | null;
+};
+
+/** Agregado completo do detalhe do lead (1 query, embeds sob RLS). */
+export type LeadDetailData = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  current_stage: LeadStage;
+  owner_id: string | null;
+  owner_name: string | null;
+  source: LeadSourcePreview | null;
+  created_at: string;
+  last_contact_at: string | null;
+  lost_at: string | null;
+  lost_reason: string | null;
+  patient: {
+    full_name: string;
+    phone: string | null;
+    status: PatientStatus;
+  } | null;
+  history: LeadStageHistoryRow[];
+  activities: LeadActivityRow[];
+  appointments: LeadAppointmentRow[];
+  budgets: LeadBudgetRow[];
 };

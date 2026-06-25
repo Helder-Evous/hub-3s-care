@@ -64,3 +64,26 @@ export function formatDate(iso: string | null): string {
     year: "2-digit",
   });
 }
+
+/** Data + hora curtas dd/mm/aa HH:mm (pt-BR). */
+export function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Valor monetario em BRL (— quando nulo). */
+export function formatCurrency(value: number | null, currency = "BRL"): string {
+  if (value == null || Number.isNaN(value)) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency,
+  }).format(value);
+}

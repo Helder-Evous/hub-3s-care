@@ -1,5 +1,11 @@
 // Rotulos PT-BR e ordenacao do funil do Controle de Lead.
-import type { LeadStage, SourceCategory } from "@/integrations/supabase/crm-types";
+import type {
+  LeadStage,
+  SourceCategory,
+  ActivityType,
+  AppointmentStatus,
+  BudgetStatus,
+} from "@/integrations/supabase/crm-types";
 
 /** Tons aceitos pelo StatusBadge/StatusDot do projeto. */
 export type BadgeTone = "success" | "warning" | "critical" | "muted" | "primary";
@@ -56,3 +62,60 @@ export const SOURCE_OPTIONS: { key: string; label: string }[] = [
   { key: "importacao", label: "Importação" },
   { key: "outros", label: "Outros" },
 ];
+
+/** Tom do badge por estagio (cabecalho/detalhe). */
+export const LEAD_STAGE_TONE: Record<LeadStage, BadgeTone> = {
+  novo: "muted",
+  agendado: "primary",
+  compareceu: "primary",
+  em_avaliacao: "primary",
+  orcamento: "warning",
+  efetivado: "success",
+  pos_venda: "success",
+  perdido: "critical",
+};
+
+export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+  ligacao: "Ligação",
+  whatsapp: "WhatsApp",
+  nota: "Nota",
+  visita: "Visita",
+  email: "E-mail",
+  outro: "Outro",
+};
+
+export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
+  agendado: "Agendado",
+  confirmado: "Confirmado",
+  remarcado: "Remarcado",
+  compareceu: "Compareceu",
+  faltou: "Faltou",
+  cancelado: "Cancelado",
+};
+
+export const APPOINTMENT_STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
+  agendado: "primary",
+  confirmado: "primary",
+  remarcado: "warning",
+  compareceu: "success",
+  faltou: "critical",
+  cancelado: "muted",
+};
+
+export const BUDGET_STATUS_LABELS: Record<BudgetStatus, string> = {
+  rascunho: "Rascunho",
+  emitido: "Emitido",
+  aceito: "Aceito",
+  rejeitado: "Rejeitado",
+  expirado: "Expirado",
+  cancelado: "Cancelado",
+};
+
+export const BUDGET_STATUS_TONE: Record<BudgetStatus, BadgeTone> = {
+  rascunho: "muted",
+  emitido: "primary",
+  aceito: "success",
+  rejeitado: "critical",
+  expirado: "warning",
+  cancelado: "muted",
+};
