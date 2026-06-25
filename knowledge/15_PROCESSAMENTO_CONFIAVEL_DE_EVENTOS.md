@@ -1,16 +1,18 @@
 ---
 documento: 15_PROCESSAMENTO_CONFIAVEL_DE_EVENTOS
-versao: 0.1-draft
+versao: 1.0
 data: 2026-06-24
 classificacao: L1 — Operacional/Técnico
 proprietario: Helder e Jefferson
-status: Proposta — aguardando aprovação
+status: Decisão arquitetural aprovada
 implementacao: não autorizada
 ---
 
 # Processamento Confiável de Eventos e Tarefas
 
-> Documento de auditoria e proposta. Nenhuma implementação de banco, migration, Edge Function, worker, cron, trigger, RLS ou código está autorizada por este documento. Ele descreve o estado atual real, os riscos e uma proposta mínima para decisão de Helder ou Jefferson.
+> **A arquitetura descrita neste documento foi aprovada como direção técnica. Essa aprovação não autoriza migrations, alterações de banco, Edge Functions, RLS ou implementação.**
+
+> Documento de auditoria e proposta. Nenhuma implementação de banco, migration, Edge Function, worker, cron, trigger, RLS ou código está autorizada por este documento. Ele descreve o estado atual real, os riscos e uma proposta mínima para execução futura.
 
 ## 1. Problema
 
