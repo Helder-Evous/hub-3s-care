@@ -91,14 +91,15 @@ Menor modelo que resolve o problema sem complexidade antecipada: **Outbox transa
 2. **`system_events` é o outbox**: nenhum trigger adicional é necessário para o MVP — a presença do evento com `status='pending'` já é o sinal de trabalho pendente.
 3. **Cron do Supabase dispara a Edge Function** em intervalo definido (ex.: a cada minuto).
 4. **A Edge Function chama um RPC PostgreSQL**: controla tamanho do lote, métricas e observabilidade, mas **não abre nem encerra transação diretamente**. A responsabilidade transacional é inteiramente do RPC.
-5. **O RPC PostgreSQL executa atomicamente**:
-   - abre transação;
-   - captura o lote de eventos pendentes com `FOR UPDATE SKIP LOCKED` (garante que dois processadores paralelos não processem o mesmo evento);
-   - cria tarefa(s) de forma idempotente (`INSERT ... ON CONFLICT DO NOTHING` com `unique(event_id, task_type)`);
-   - atualiza `system_events` para `processed` (ou `retry_wait`/`failed_permanent` em falha);
-   - faz `COMMIT` — todas as escritas são confirmadas juntas ou nenhuma é.
+5. **O RPC PostgreSQL processa o lote**:
 
-Erros dentro do RPC causam `ROLLBACK` automático: o evento volta a `pending`, o processador retenta na próxima janela.
+   Todas as operações da RPC são executadas dentro de uma única transação PostgreSQL controlada pela chamada.
+
+   A RPC captura o lote elegível com `FOR UPDATE SKIP LOCKED`, processa cada evento e cria as tarefas de forma idempotente.
+
+   Falhas esperadas de um evento são tratadas dentro da RPC e persistem `attempt_count`, `last_error`, `next_retry_at` e o status `retry_wait` ou `failed_permanent`, sem necessariamente interromper os demais eventos do lote.
+
+   Uma falha estrutural não tratada da RPC reverte a chamada inteira. O mecanismo de lease e expiração do lock deve garantir que nenhum evento permaneça indefinidamente em `processing`.
 
 ### Estruturas a avaliar (não assumir que todas serão necessárias)
 
