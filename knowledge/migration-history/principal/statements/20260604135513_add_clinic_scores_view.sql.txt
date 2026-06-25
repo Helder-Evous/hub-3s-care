@@ -1,0 +1,73 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260604135513
+Name: add_clinic_scores_view
+Statement count: 1
+SHA-256: 3a032f94bb7055003541e44763ad938a5760c1b9353a55e3c32e34b16d1924eb
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+CREATE OR REPLACE VIEW public.vw_clinic_scores AS
+SELECT
+  c.id,
+  c.name,
+  c.city,
+  c.state,
+  c.responsible,
+  c.status,
+  COALESCE(
+    (CASE WHEN ci.has_backup_number    THEN 20 ELSE 0 END) +
+    (CASE WHEN ci.has_backup_api       THEN 20 ELSE 0 END) +
+    (CASE WHEN ci.has_approved_template THEN 20 ELSE 0 END) +
+    (CASE WHEN ci.has_backup_chip      THEN 20 ELSE 0 END) +
+    (CASE WHEN ci.has_backup_device    THEN 20 ELSE 0 END),
+    0
+  ) AS contingency_score,
+  CASE
+    WHEN COALESCE(
+      (CASE WHEN ci.has_backup_number    THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_api       THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_approved_template THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_chip      THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_device    THEN 20 ELSE 0 END), 0
+    ) >= 80 THEN 'blindada'
+    WHEN COALESCE(
+      (CASE WHEN ci.has_backup_number    THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_api       THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_approved_template THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_chip      THEN 20 ELSE 0 END) +
+      (CASE WHEN ci.has_backup_device    THEN 20 ELSE 0 END), 0
+    ) >= 50 THEN 'risco_moderado'
+    ELSE 'alto_risco'
+  END AS contingency_class,
+  CASE
+    WHEN EXISTS (
+      SELECT 1 FROM public.channels ch
+      WHERE ch.clinic_id = c.id
+        AND ch.status IN ('critico', 'bloqueado', 'desconectado')
+        AND ch.deactivated_at IS NULL
+    ) THEN 'critico'
+    WHEN EXISTS (
+      SELECT 1 FROM public.channels ch
+      WHERE ch.clinic_id = c.id
+        AND ch.status = 'em_atencao'
+        AND ch.deactivated_at IS NULL
+    ) THEN 'atencao'
+    ELSE 'normal'
+  END AS health_status,
+  (SELECT COUNT(*) FROM public.channels ch WHERE ch.clinic_id = c.id AND ch.deactivated_at IS NULL) AS active_channels_count,
+  (SELECT COUNT(*) FROM public.alerts a WHERE a.clinic_id = c.id AND a.status != 'resolvido') AS open_alerts_count,
+  (SELECT COUNT(*) FROM public.alerts a WHERE a.clinic_id = c.id AND a.status != 'resolvido' AND a.severity = 'critica') AS critical_alerts_count
+FROM public.clinics c
+LEFT JOIN public.contingency_items ci ON ci.clinic_id = c.id;
+
+GRANT SELECT ON public.vw_clinic_scores TO authenticated;
+===== END RAW STATEMENTS =====

@@ -1,0 +1,158 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260604135435
+Name: extend_existing_tables
+Statement count: 1
+SHA-256: b9b9e73fefb942ef847215ed3b6b9a8ca667b5863822abfb10d73e0b9644ee79
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+CREATE OR REPLACE FUNCTION fn_user_can_access_clinic(p_clinic_id UUID)
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.hub_users u
+    WHERE u.id = auth.uid()
+      AND u.active = true
+      AND (
+        u.role IN ('admin', 'gestor')
+        OR EXISTS (
+          SELECT 1 FROM public.clinic_assignments ca
+          WHERE ca.user_id = auth.uid()
+            AND ca.clinic_id = p_clinic_id
+        )
+      )
+  )
+$$;
+
+ALTER TABLE public.clinics
+  ADD COLUMN IF NOT EXISTS external_id  TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS plan         TEXT DEFAULT 'crm',
+  ADD COLUMN IF NOT EXISTS notes        TEXT,
+  ADD COLUMN IF NOT EXISTS cnpj         TEXT,
+  ADD COLUMN IF NOT EXISTS phone        TEXT;
+
+DROP POLICY IF EXISTS "public read" ON public.clinics;
+DROP POLICY IF EXISTS "authenticated read" ON public.clinics;
+
+CREATE POLICY "authenticated users see their clinics" ON public.clinics
+  FOR SELECT USING (fn_user_can_access_clinic(id));
+
+CREATE POLICY "gestores insert clinics" ON public.clinics
+  FOR INSERT WITH CHECK (
+    (SELECT role FROM public.hub_users WHERE id = auth.uid()) IN ('admin', 'gestor')
+  );
+
+CREATE POLICY "gestores update clinics" ON public.clinics
+  FOR UPDATE USING (
+    (SELECT role FROM public.hub_users WHERE id = auth.uid()) IN ('admin', 'gestor')
+  );
+
+ALTER TABLE public.channels
+  ADD COLUMN IF NOT EXISTS external_id        TEXT,
+  ADD COLUMN IF NOT EXISTS platform_name      TEXT,
+  ADD COLUMN IF NOT EXISTS waba_id            TEXT,
+  ADD COLUMN IF NOT EXISTS phone_number_id    TEXT,
+  ADD COLUMN IF NOT EXISTS access_token_hint  TEXT,
+  ADD COLUMN IF NOT EXISTS chip_iccid         TEXT,
+  ADD COLUMN IF NOT EXISTS purchase_date      DATE,
+  ADD COLUMN IF NOT EXISTS last_status_change TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS deactivated_at     TIMESTAMPTZ;
+
+DROP POLICY IF EXISTS "public read" ON public.channels;
+DROP POLICY IF EXISTS "authenticated read" ON public.channels;
+
+CREATE POLICY "authenticated users see their channels" ON public.channels
+  FOR SELECT USING (fn_user_can_access_clinic(clinic_id));
+
+CREATE POLICY "gestores insert channels" ON public.channels
+  FOR INSERT WITH CHECK (
+    fn_user_can_access_clinic(clinic_id)
+    AND (SELECT role FROM public.hub_users WHERE id = auth.uid()) IN ('admin', 'gestor')
+  );
+
+CREATE POLICY "gestores update channels" ON public.channels
+  FOR UPDATE USING (
+    fn_user_can_access_clinic(clinic_id)
+    AND (SELECT role FROM public.hub_users WHERE id = auth.uid()) IN ('admin', 'gestor')
+  );
+
+ALTER TABLE public.channel_monitoring
+  ADD COLUMN IF NOT EXISTS is_latest    BOOLEAN NOT NULL DEFAULT true,
+  ADD COLUMN IF NOT EXISTS collector    TEXT,
+  ADD COLUMN IF NOT EXISTS raw_payload  JSONB;
+
+CREATE OR REPLACE FUNCTION fn_channel_monitoring_set_latest()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.channel_monitoring
+  SET is_latest = false
+  WHERE channel_id = NEW.channel_id
+    AND id != NEW.id
+    AND is_latest = true;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_channel_monitoring_latest
+  AFTER INSERT ON public.channel_monitoring
+  FOR EACH ROW EXECUTE FUNCTION fn_channel_monitoring_set_latest();
+
+DROP POLICY IF EXISTS "public read" ON public.channel_monitoring;
+DROP POLICY IF EXISTS "authenticated read" ON public.channel_monitoring;
+
+CREATE POLICY "authenticated users see monitoring" ON public.channel_monitoring
+  FOR SELECT USING (
+    fn_user_can_access_clinic(
+      (SELECT clinic_id FROM public.channels WHERE id = channel_id)
+    )
+  );
+
+DROP POLICY IF EXISTS "public read" ON public.contingency_items;
+DROP POLICY IF EXISTS "authenticated read" ON public.contingency_items;
+
+CREATE POLICY "authenticated users see contingency" ON public.contingency_items
+  FOR SELECT USING (fn_user_can_access_clinic(clinic_id));
+
+CREATE POLICY "operadores update contingency" ON public.contingency_items
+  FOR UPDATE USING (fn_user_can_access_clinic(clinic_id));
+
+CREATE POLICY "gestores insert contingency" ON public.contingency_items
+  FOR INSERT WITH CHECK (fn_user_can_access_clinic(clinic_id));
+
+ALTER TABLE public.alerts
+  ADD COLUMN IF NOT EXISTS alert_source     TEXT DEFAULT 'manual',
+  ADD COLUMN IF NOT EXISTS auto_generated   BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS acknowledged_by  UUID REFERENCES public.hub_users(id),
+  ADD COLUMN IF NOT EXISTS acknowledged_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS escalated_to     UUID REFERENCES public.hub_users(id),
+  ADD COLUMN IF NOT EXISTS escalated_at     TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS resolution_notes TEXT;
+
+DROP POLICY IF EXISTS "public read" ON public.alerts;
+DROP POLICY IF EXISTS "authenticated read" ON public.alerts;
+
+CREATE POLICY "authenticated users see alerts" ON public.alerts
+  FOR SELECT USING (fn_user_can_access_clinic(clinic_id));
+
+CREATE POLICY "users update alerts" ON public.alerts
+  FOR UPDATE USING (fn_user_can_access_clinic(clinic_id));
+
+CREATE POLICY "gestores insert alerts" ON public.alerts
+  FOR INSERT WITH CHECK (fn_user_can_access_clinic(clinic_id));
+
+DROP POLICY IF EXISTS "public read" ON public.audit_logs;
+DROP POLICY IF EXISTS "authenticated read" ON public.audit_logs;
+
+CREATE POLICY "gestores see audit logs" ON public.audit_logs
+  FOR SELECT USING (
+    (SELECT role FROM public.hub_users WHERE id = auth.uid()) IN ('admin', 'gestor')
+  );
+===== END RAW STATEMENTS =====

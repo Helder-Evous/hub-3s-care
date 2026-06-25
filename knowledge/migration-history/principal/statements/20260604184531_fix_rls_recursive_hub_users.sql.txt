@@ -1,0 +1,55 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260604184531
+Name: fix_rls_recursive_hub_users
+Statement count: 1
+SHA-256: 186a7fd0563a24b3d12cecade7b144db41f3e29958d5e1824e27acbdd6f0a2e4
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+
+-- Cria função SECURITY DEFINER para ler o role do usuário atual
+-- sem disparar as policies RLS de hub_users (evita recursão infinita)
+CREATE OR REPLACE FUNCTION public.get_my_role()
+RETURNS public.hub_role
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT role FROM public.hub_users WHERE id = auth.uid()
+$$;
+
+-- Recriar policies de hub_users sem recursão
+DROP POLICY IF EXISTS "admins manage users" ON public.hub_users;
+DROP POLICY IF EXISTS "users see own profile" ON public.hub_users;
+
+CREATE POLICY "users see own profile"
+  ON public.hub_users FOR SELECT
+  USING (id = auth.uid() OR public.get_my_role() = 'admin');
+
+CREATE POLICY "admins manage users"
+  ON public.hub_users FOR ALL
+  USING (public.get_my_role() = 'admin');
+
+-- Recriar policies de clinics que também consultavam hub_users inline
+DROP POLICY IF EXISTS "gestores insert clinics" ON public.clinics;
+DROP POLICY IF EXISTS "gestores update clinics" ON public.clinics;
+
+CREATE POLICY "gestores insert clinics"
+  ON public.clinics FOR INSERT
+  WITH CHECK (public.get_my_role() = ANY (ARRAY['admin'::public.hub_role, 'gestor'::public.hub_role]));
+
+CREATE POLICY "gestores update clinics"
+  ON public.clinics FOR UPDATE
+  USING (public.get_my_role() = ANY (ARRAY['admin'::public.hub_role, 'gestor'::public.hub_role]));
+
+===== END RAW STATEMENTS =====

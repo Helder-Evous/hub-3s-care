@@ -1,0 +1,145 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623135941
+Name: crm_005_patients
+Statement count: 1
+SHA-256: 9075b8087073afeb8e6f5693a006a5566f8d656398c8cc57fd001358d0b0227a
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create table if not exists crm.patients (
+  id                    uuid primary key default gen_random_uuid(),
+  clinic_id             uuid not null references public.clinics (id) on delete restrict,
+  full_name             text not null,
+  cpf                   text,
+  phone                 text,
+  phone_normalized      text,
+  email                 text,
+  birth_date            date,
+  status                crm.patient_status not null default 'prospecto',
+  notes                 text,
+  codefy_id             text,
+  external_ref          text,
+  source_system         text not null default 'controle_lead',
+  synced_at             timestamptz,
+  reconciliation_status crm.reconciliation_status not null default 'nao_aplicavel',
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  constraint patients_id_clinic_unique unique (id, clinic_id)
+);
+
+comment on table crm.patients is
+  'Identidade da pessoa atendida por uma clinica (paciente-prospecto). Por clinica '
+  '(clinic_id); a mesma pessoa em outra clinica e outro registro (sem unificacao no MVP).';
+comment on column crm.patients.phone_normalized is
+  'DERIVADO de phone (E.164) por trigger. NAO e fonte de verdade.';
+comment on column crm.patients.notes is
+  'Observacao operacional do CRC. NAO e prontuario clinico e nao deve conter dado de saude.';
+
+create unique index if not exists patients_clinic_cpf_uq
+  on crm.patients (clinic_id, cpf) where cpf is not null;
+create unique index if not exists patients_clinic_codefy_uq
+  on crm.patients (clinic_id, codefy_id) where codefy_id is not null;
+create index if not exists patients_clinic_idx
+  on crm.patients (clinic_id);
+create index if not exists patients_clinic_phone_idx
+  on crm.patients (clinic_id, phone_normalized);
+create index if not exists patients_clinic_email_idx
+  on crm.patients (clinic_id, lower(email));
+create index if not exists patients_clinic_status_idx
+  on crm.patients (clinic_id, status);
+create index if not exists patients_clinic_reconc_idx
+  on crm.patients (clinic_id, reconciliation_status);
+
+create or replace function crm.fn_normalize_patient()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_digits text;
+begin
+  new.cpf := nullif(regexp_replace(coalesce(new.cpf, ''), '\D', '', 'g'), '');
+  v_digits := nullif(regexp_replace(coalesce(new.phone, ''), '\D', '', 'g'), '');
+  if v_digits is null then
+    new.phone_normalized := null;
+  elsif left(v_digits, 2) = '55' then
+    new.phone_normalized := '+' || v_digits;
+  elsif char_length(v_digits) in (10, 11) then
+    new.phone_normalized := '+55' || v_digits;
+  else
+    new.phone_normalized := '+' || v_digits;
+  end if;
+  return new;
+end;
+$$;
+
+comment on function crm.fn_normalize_patient() is
+  'Normaliza cpf (digitos) e phone_normalized (E.164, default BR) em crm.patients.';
+
+drop trigger if exists trg_patients_normalize on crm.patients;
+create trigger trg_patients_normalize
+  before insert or update on crm.patients
+  for each row execute function crm.fn_normalize_patient();
+
+create or replace function crm.fn_touch_updated_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+comment on function crm.fn_touch_updated_at() is
+  'FUNCAO COMPARTILHADA do schema crm: atualiza updated_at = now() em BEFORE UPDATE.';
+
+drop trigger if exists trg_patients_touch_updated_at on crm.patients;
+create trigger trg_patients_touch_updated_at
+  before update on crm.patients
+  for each row execute function crm.fn_touch_updated_at();
+
+grant select, insert, update on crm.patients to authenticated;
+grant all on crm.patients to service_role;
+
+alter table crm.patients enable row level security;
+
+drop policy if exists patients_select_scoped on crm.patients;
+create policy patients_select_scoped
+  on crm.patients
+  for select to authenticated
+  using (
+    crm.is_staff_3s()
+    or (crm.user_has_clinic_access(clinic_id) and crm.module_enabled_for_clinic(clinic_id))
+  );
+
+drop policy if exists patients_insert_manage on crm.patients;
+create policy patients_insert_manage
+  on crm.patients
+  for insert to authenticated
+  with check (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  );
+
+drop policy if exists patients_update_manage on crm.patients;
+create policy patients_update_manage
+  on crm.patients
+  for update to authenticated
+  using (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  )
+  with check (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  );
+
+===== END RAW STATEMENTS =====

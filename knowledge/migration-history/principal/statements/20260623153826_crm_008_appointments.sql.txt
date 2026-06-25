@@ -1,0 +1,85 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260623153826
+Name: crm_008_appointments
+Statement count: 1
+SHA-256: 66a52de7c3f2acc2dcde06c2fb11f4034fb5065e202378ae510a4ca7e5d11336
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create table if not exists crm.appointments (
+  id                    uuid primary key default gen_random_uuid(),
+  clinic_id             uuid not null,
+  patient_id            uuid not null,
+  lead_id               uuid,
+  status                crm.appointment_status not null default 'agendado',
+  scheduled_at          timestamptz not null,
+  confirmed_at          timestamptz,
+  attended_at           timestamptz,
+  no_show_at            timestamptz,
+  cancelled_at          timestamptz,
+  rescheduled_from      uuid,
+  professional_name     text,
+  procedure_name        text,
+  codefy_id             text,
+  source_system         text not null default 'controle_lead',
+  external_ref          text,
+  synced_at             timestamptz,
+  reconciliation_status crm.reconciliation_status not null default 'nao_aplicavel',
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  constraint appointments_clinic_fk foreign key (clinic_id) references public.clinics (id) on delete restrict,
+  constraint appointments_patient_clinic_fk foreign key (patient_id, clinic_id)
+    references crm.patients (id, clinic_id) on delete cascade,
+  constraint appointments_lead_patient_fk foreign key (lead_id, patient_id)
+    references crm.leads (id, patient_id) on delete no action,
+  constraint appointments_rescheduled_from_fk foreign key (rescheduled_from) references crm.appointments (id) on delete set null
+);
+
+comment on table crm.appointments is
+  'Agendamentos do paciente no funil clinico (Modelo C: patient_id obrigatorio, lead_id opcional).';
+comment on column crm.appointments.procedure_name is
+  'Rotulo OPERACIONAL do procedimento (texto opcional). NAO e prontuario clinico.';
+
+create unique index if not exists appointments_clinic_codefy_uq on crm.appointments (clinic_id, codefy_id) where codefy_id is not null;
+create index if not exists appointments_clinic_scheduled_idx on crm.appointments (clinic_id, scheduled_at);
+create index if not exists appointments_patient_idx on crm.appointments (patient_id);
+create index if not exists appointments_lead_idx on crm.appointments (lead_id);
+create index if not exists appointments_clinic_status_idx on crm.appointments (clinic_id, status);
+create index if not exists appointments_rescheduled_from_idx on crm.appointments (rescheduled_from);
+create index if not exists appointments_clinic_reconc_idx on crm.appointments (clinic_id, reconciliation_status);
+
+drop trigger if exists trg_appointments_touch_updated_at on crm.appointments;
+create trigger trg_appointments_touch_updated_at before update on crm.appointments
+  for each row execute function crm.fn_touch_updated_at();
+
+grant select, insert, update on crm.appointments to authenticated;
+grant all on crm.appointments to service_role;
+
+alter table crm.appointments enable row level security;
+
+drop policy if exists appointments_select_scoped on crm.appointments;
+create policy appointments_select_scoped on crm.appointments
+  for select to authenticated
+  using (crm.is_staff_3s() or (crm.user_has_clinic_access(clinic_id) and crm.module_enabled_for_clinic(clinic_id)));
+
+drop policy if exists appointments_insert_manage on crm.appointments;
+create policy appointments_insert_manage on crm.appointments
+  for insert to authenticated
+  with check (crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id));
+
+drop policy if exists appointments_update_manage on crm.appointments;
+create policy appointments_update_manage on crm.appointments
+  for update to authenticated
+  using (crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id))
+  with check (crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id));
+
+===== END RAW STATEMENTS =====

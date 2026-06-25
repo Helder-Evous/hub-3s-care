@@ -1,0 +1,75 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260619204324
+Name: create_ai_tasks
+Statement count: 1
+SHA-256: 4ccb7d0cc0bbd45061a0301a43a42e05d197da6b54de6f510c13c119bddc5116
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+-- ai_tasks: fila de tarefas geradas por agentes IA para supervisão humana
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_task_status'
+                 AND typnamespace = 'public'::regnamespace) THEN
+    CREATE TYPE public.ai_task_status AS ENUM (
+      'pendente','em_revisao','aprovada','rejeitada','executando','concluida','falhou'
+    );
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_task_priority'
+                 AND typnamespace = 'public'::regnamespace) THEN
+    CREATE TYPE public.ai_task_priority AS ENUM ('baixa','media','alta','critica');
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.ai_tasks (
+  id              uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  task_type       text        NOT NULL,
+  title           text        NOT NULL,
+  description     text,
+  priority        public.ai_task_priority NOT NULL DEFAULT 'media',
+  status          public.ai_task_status   NOT NULL DEFAULT 'pendente',
+  entity_type     text,
+  entity_id       uuid,
+  clinic_id       uuid REFERENCES public.clinics(id)      ON DELETE SET NULL,
+  onboarding_id   uuid REFERENCES public.onboardings(id)  ON DELETE SET NULL,
+  sale_id         uuid REFERENCES public.sales(id)        ON DELETE SET NULL,
+  source          text        NOT NULL DEFAULT 'agente_ia',
+  auto_executable boolean     NOT NULL DEFAULT false,
+  payload         jsonb,
+  result          jsonb,
+  assigned_to     uuid REFERENCES public.hub_users(id)    ON DELETE SET NULL,
+  reviewed_by     uuid REFERENCES public.hub_users(id)    ON DELETE SET NULL,
+  reviewed_at     timestamptz,
+  executed_at     timestamptz,
+  error_message   text
+);
+
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_status     ON public.ai_tasks (status);
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_priority   ON public.ai_tasks (priority);
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_clinic_id  ON public.ai_tasks (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_created_at ON public.ai_tasks (created_at DESC);
+
+ALTER TABLE public.ai_tasks ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='ai_tasks' AND policyname='ai_tasks_select') THEN
+    CREATE POLICY "ai_tasks_select" ON public.ai_tasks FOR SELECT TO authenticated USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='ai_tasks' AND policyname='ai_tasks_insert') THEN
+    CREATE POLICY "ai_tasks_insert" ON public.ai_tasks FOR INSERT TO authenticated WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='ai_tasks' AND policyname='ai_tasks_update') THEN
+    CREATE POLICY "ai_tasks_update" ON public.ai_tasks FOR UPDATE TO authenticated USING (true);
+  END IF;
+END $$;
+===== END RAW STATEMENTS =====

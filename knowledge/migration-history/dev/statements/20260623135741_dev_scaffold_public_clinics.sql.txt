@@ -1,0 +1,28 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623135741
+Name: dev_scaffold_public_clinics
+Statement count: 1
+SHA-256: 3e8280e2c21ce48500cfb8918b1e9e7c4b1b8f6cd481a9c08bfe63acd0db01fe
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+-- DEV-ONLY scaffold: minimal public.clinics so crm FKs resolve and smoke tests run.
+-- NOT part of the Controle de Lead module migrations. The real project already has
+-- the full public.clinics table.
+create table if not exists public.clinics (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.clinics enable row level security;
+
+===== END RAW STATEMENTS =====

@@ -1,0 +1,308 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260529143328
+Name: 0c3bac65-0b3f-43bd-86c2-e0897b9d7924
+Statement count: 33
+SHA-256: 661788c4599f9ba39401c195d7786bda0cbfe57df605498c2e7d9a4465a06980
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+-- Enums
+CREATE TYPE public.clinic_status AS ENUM ('ativa','pausada','cancelada')
+CREATE TYPE public.channel_type AS ENUM ('api_oficial','whatsapp_comum','numero_reserva','api_reserva')
+CREATE TYPE public.channel_status AS ENUM ('ativo','em_atencao','critico','livre','bloqueado','desconectado')
+CREATE TYPE public.alert_severity AS ENUM ('baixa','media','alta','critica')
+CREATE TYPE public.alert_status AS ENUM ('aberto','em_tratamento','resolvido')
+CREATE TYPE public.data_origin AS ENUM ('meta_api','plataforma','manual','robo_tela')
+CREATE TYPE public.quality_rating AS ENUM ('alto','medio','baixo','desconhecido')
+CREATE TYPE public.number_status AS ENUM ('conectado','restrito','banido','pendente','desconhecido')
+-- Clinics
+CREATE TABLE public.clinics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  city TEXT,
+  state TEXT,
+  responsible TEXT,
+  status public.clinic_status NOT NULL DEFAULT 'ativa',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+-- Channels
+CREATE TABLE public.channels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  phone_number TEXT NOT NULL,
+  channel_type public.channel_type NOT NULL,
+  status public.channel_status NOT NULL DEFAULT 'ativo',
+  activated_at DATE,
+  carrier TEXT,
+  device TEXT,
+  responsible TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+-- Channel monitoring
+CREATE TABLE public.channel_monitoring (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id UUID NOT NULL REFERENCES public.channels(id) ON DELETE CASCADE,
+  connected BOOLEAN,
+  quality_rating public.quality_rating,
+  number_status public.number_status,
+  message_limit INT,
+  has_restriction BOOLEAN,
+  qr_disconnected BOOLEAN,
+  session_expired BOOLEAN,
+  receiving_messages BOOLEAN,
+  sending_messages BOOLEAN,
+  last_message_received TIMESTAMPTZ,
+  last_message_sent TIMESTAMPTZ,
+  last_check TIMESTAMPTZ NOT NULL DEFAULT now(),
+  data_origin public.data_origin NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+-- Contingency items
+CREATE TABLE public.contingency_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID NOT NULL UNIQUE REFERENCES public.clinics(id) ON DELETE CASCADE,
+  has_backup_number BOOLEAN NOT NULL DEFAULT false,
+  has_backup_api BOOLEAN NOT NULL DEFAULT false,
+  has_approved_template BOOLEAN NOT NULL DEFAULT false,
+  has_backup_chip BOOLEAN NOT NULL DEFAULT false,
+  has_backup_device BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+-- Alerts
+CREATE TABLE public.alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID REFERENCES public.clinics(id) ON DELETE CASCADE,
+  channel_id UUID REFERENCES public.channels(id) ON DELETE SET NULL,
+  alert_type TEXT NOT NULL,
+  severity public.alert_severity NOT NULL,
+  message TEXT NOT NULL,
+  status public.alert_status NOT NULL DEFAULT 'aberto',
+  responsible TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at TIMESTAMPTZ
+)
+-- Audit logs
+CREATE TABLE public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity TEXT NOT NULL,
+  entity_id UUID,
+  action TEXT NOT NULL,
+  actor TEXT,
+  payload JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+-- Grants (MVP demo, public read; writes via service_role)
+GRANT SELECT ON public.clinics TO anon, authenticated
+GRANT SELECT ON public.channels TO anon, authenticated
+GRANT SELECT ON public.channel_monitoring TO anon, authenticated
+GRANT SELECT ON public.contingency_items TO anon, authenticated
+GRANT SELECT ON public.alerts TO anon, authenticated
+GRANT SELECT ON public.audit_logs TO anon, authenticated
+GRANT ALL ON public.clinics, public.channels, public.channel_monitoring, public.contingency_items, public.alerts, public.audit_logs TO service_role
+ALTER TABLE public.clinics ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.channels ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.channel_monitoring ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.contingency_items ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.alerts ENABLE ROW LEVEL SECURITY
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY
+CREATE POLICY "public read" ON public.clinics FOR SELECT USING (true)
+CREATE POLICY "public read" ON public.channels FOR SELECT USING (true)
+CREATE POLICY "public read" ON public.channel_monitoring FOR SELECT USING (true)
+CREATE POLICY "public read" ON public.contingency_items FOR SELECT USING (true)
+CREATE POLICY "public read" ON public.alerts FOR SELECT USING (true)
+CREATE POLICY "public read" ON public.audit_logs FOR SELECT USING (true)
+===== END RAW STATEMENTS =====
+
+
+===== ITEMIZED STATEMENTS (documentary; ordem original do array) =====
+(esta seção é derivada do mesmo `statements`; o array possui 33 itens.)
+
+----- statement 1/33 -----
+-- Enums
+CREATE TYPE public.clinic_status AS ENUM ('ativa','pausada','cancelada')
+
+----- statement 2/33 -----
+CREATE TYPE public.channel_type AS ENUM ('api_oficial','whatsapp_comum','numero_reserva','api_reserva')
+
+----- statement 3/33 -----
+CREATE TYPE public.channel_status AS ENUM ('ativo','em_atencao','critico','livre','bloqueado','desconectado')
+
+----- statement 4/33 -----
+CREATE TYPE public.alert_severity AS ENUM ('baixa','media','alta','critica')
+
+----- statement 5/33 -----
+CREATE TYPE public.alert_status AS ENUM ('aberto','em_tratamento','resolvido')
+
+----- statement 6/33 -----
+CREATE TYPE public.data_origin AS ENUM ('meta_api','plataforma','manual','robo_tela')
+
+----- statement 7/33 -----
+CREATE TYPE public.quality_rating AS ENUM ('alto','medio','baixo','desconhecido')
+
+----- statement 8/33 -----
+CREATE TYPE public.number_status AS ENUM ('conectado','restrito','banido','pendente','desconhecido')
+
+----- statement 9/33 -----
+-- Clinics
+CREATE TABLE public.clinics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  city TEXT,
+  state TEXT,
+  responsible TEXT,
+  status public.clinic_status NOT NULL DEFAULT 'ativa',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
+----- statement 10/33 -----
+-- Channels
+CREATE TABLE public.channels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID NOT NULL REFERENCES public.clinics(id) ON DELETE CASCADE,
+  phone_number TEXT NOT NULL,
+  channel_type public.channel_type NOT NULL,
+  status public.channel_status NOT NULL DEFAULT 'ativo',
+  activated_at DATE,
+  carrier TEXT,
+  device TEXT,
+  responsible TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
+----- statement 11/33 -----
+-- Channel monitoring
+CREATE TABLE public.channel_monitoring (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  channel_id UUID NOT NULL REFERENCES public.channels(id) ON DELETE CASCADE,
+  connected BOOLEAN,
+  quality_rating public.quality_rating,
+  number_status public.number_status,
+  message_limit INT,
+  has_restriction BOOLEAN,
+  qr_disconnected BOOLEAN,
+  session_expired BOOLEAN,
+  receiving_messages BOOLEAN,
+  sending_messages BOOLEAN,
+  last_message_received TIMESTAMPTZ,
+  last_message_sent TIMESTAMPTZ,
+  last_check TIMESTAMPTZ NOT NULL DEFAULT now(),
+  data_origin public.data_origin NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
+----- statement 12/33 -----
+-- Contingency items
+CREATE TABLE public.contingency_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID NOT NULL UNIQUE REFERENCES public.clinics(id) ON DELETE CASCADE,
+  has_backup_number BOOLEAN NOT NULL DEFAULT false,
+  has_backup_api BOOLEAN NOT NULL DEFAULT false,
+  has_approved_template BOOLEAN NOT NULL DEFAULT false,
+  has_backup_chip BOOLEAN NOT NULL DEFAULT false,
+  has_backup_device BOOLEAN NOT NULL DEFAULT false,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
+----- statement 13/33 -----
+-- Alerts
+CREATE TABLE public.alerts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  clinic_id UUID REFERENCES public.clinics(id) ON DELETE CASCADE,
+  channel_id UUID REFERENCES public.channels(id) ON DELETE SET NULL,
+  alert_type TEXT NOT NULL,
+  severity public.alert_severity NOT NULL,
+  message TEXT NOT NULL,
+  status public.alert_status NOT NULL DEFAULT 'aberto',
+  responsible TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolved_at TIMESTAMPTZ
+)
+
+----- statement 14/33 -----
+-- Audit logs
+CREATE TABLE public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity TEXT NOT NULL,
+  entity_id UUID,
+  action TEXT NOT NULL,
+  actor TEXT,
+  payload JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+
+----- statement 15/33 -----
+-- Grants (MVP demo, public read; writes via service_role)
+GRANT SELECT ON public.clinics TO anon, authenticated
+
+----- statement 16/33 -----
+GRANT SELECT ON public.channels TO anon, authenticated
+
+----- statement 17/33 -----
+GRANT SELECT ON public.channel_monitoring TO anon, authenticated
+
+----- statement 18/33 -----
+GRANT SELECT ON public.contingency_items TO anon, authenticated
+
+----- statement 19/33 -----
+GRANT SELECT ON public.alerts TO anon, authenticated
+
+----- statement 20/33 -----
+GRANT SELECT ON public.audit_logs TO anon, authenticated
+
+----- statement 21/33 -----
+GRANT ALL ON public.clinics, public.channels, public.channel_monitoring, public.contingency_items, public.alerts, public.audit_logs TO service_role
+
+----- statement 22/33 -----
+ALTER TABLE public.clinics ENABLE ROW LEVEL SECURITY
+
+----- statement 23/33 -----
+ALTER TABLE public.channels ENABLE ROW LEVEL SECURITY
+
+----- statement 24/33 -----
+ALTER TABLE public.channel_monitoring ENABLE ROW LEVEL SECURITY
+
+----- statement 25/33 -----
+ALTER TABLE public.contingency_items ENABLE ROW LEVEL SECURITY
+
+----- statement 26/33 -----
+ALTER TABLE public.alerts ENABLE ROW LEVEL SECURITY
+
+----- statement 27/33 -----
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY
+
+----- statement 28/33 -----
+CREATE POLICY "public read" ON public.clinics FOR SELECT USING (true)
+
+----- statement 29/33 -----
+CREATE POLICY "public read" ON public.channels FOR SELECT USING (true)
+
+----- statement 30/33 -----
+CREATE POLICY "public read" ON public.channel_monitoring FOR SELECT USING (true)
+
+----- statement 31/33 -----
+CREATE POLICY "public read" ON public.contingency_items FOR SELECT USING (true)
+
+----- statement 32/33 -----
+CREATE POLICY "public read" ON public.alerts FOR SELECT USING (true)
+
+----- statement 33/33 -----
+CREATE POLICY "public read" ON public.audit_logs FOR SELECT USING (true)
+
+===== END ITEMIZED STATEMENTS =====

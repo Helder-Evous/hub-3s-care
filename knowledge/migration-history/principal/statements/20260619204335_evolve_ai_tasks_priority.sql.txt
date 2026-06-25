@@ -1,0 +1,46 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260619204335
+Name: evolve_ai_tasks_priority
+Statement count: 1
+SHA-256: c7f2c587a58f8fdbd4c44d91f9306e31cc05218524982e242476b27fb65fd6f0
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+-- Evolução ai_tasks: priorização inteligente (Impacto × Urgência)
+ALTER TABLE public.ai_tasks
+  ADD COLUMN IF NOT EXISTS impact_level      integer,
+  ADD COLUMN IF NOT EXISTS urgency_level     integer,
+  ADD COLUMN IF NOT EXISTS priority_score    integer,
+  ADD COLUMN IF NOT EXISTS confidence_score  numeric,
+  ADD COLUMN IF NOT EXISTS source_event_type text,
+  ADD COLUMN IF NOT EXISTS requires_human    boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS next_action       text;
+
+-- guarda-corpos de domínio (1..5) sem quebrar linhas antigas/nulas
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ai_tasks_impact_range') THEN
+    ALTER TABLE public.ai_tasks
+      ADD CONSTRAINT ai_tasks_impact_range
+      CHECK (impact_level IS NULL OR impact_level BETWEEN 1 AND 5);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='ai_tasks_urgency_range') THEN
+    ALTER TABLE public.ai_tasks
+      ADD CONSTRAINT ai_tasks_urgency_range
+      CHECK (urgency_level IS NULL OR urgency_level BETWEEN 1 AND 5);
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_priority_score
+  ON public.ai_tasks (priority_score DESC NULLS LAST);
+CREATE INDEX IF NOT EXISTS idx_ai_tasks_requires_human
+  ON public.ai_tasks (requires_human);
+===== END RAW STATEMENTS =====

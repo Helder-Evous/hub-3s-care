@@ -1,0 +1,106 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623140106
+Name: crm_009_budgets
+Statement count: 1
+SHA-256: 262847f32f350c602d52fe462f1dcf180fbccfa878b07d10edcb4e10da92973b
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create table if not exists crm.budgets (
+  id                    uuid primary key default gen_random_uuid(),
+  clinic_id             uuid not null,
+  patient_id            uuid not null,
+  lead_id               uuid,
+  status                crm.budget_status not null default 'rascunho',
+  total_amount          numeric(12,2),
+  currency              text not null default 'BRL',
+  presented_at          timestamptz,
+  accepted_at           timestamptz,
+  rejected_at           timestamptz,
+  expired_at            timestamptz,
+  cancelled_at          timestamptz,
+  valid_until           timestamptz,
+  description           text,
+  codefy_id             text,
+  source_system         text not null default 'controle_lead',
+  external_ref          text,
+  synced_at             timestamptz,
+  reconciliation_status crm.reconciliation_status not null default 'nao_aplicavel',
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now(),
+  constraint budgets_total_amount_chk
+    check (total_amount is null or total_amount >= 0),
+  constraint budgets_clinic_fk
+    foreign key (clinic_id) references public.clinics (id) on delete restrict,
+  constraint budgets_patient_clinic_fk
+    foreign key (patient_id, clinic_id)
+    references crm.patients (id, clinic_id) on delete cascade,
+  constraint budgets_lead_patient_fk
+    foreign key (lead_id, patient_id)
+    references crm.leads (id, patient_id) on delete no action
+);
+
+comment on table crm.budgets is
+  'Orcamento/proposta clinica. NAO e pagamento, NAO e receita clinica e NAO e receita da 3S.';
+comment on column crm.budgets.total_amount is
+  'Valor total (>= 0). Pode ser NULL em rascunho. NAO representa receita nem pagamento.';
+comment on column crm.budgets.description is
+  'Texto operacional CURTO. NAO e prontuario/diagnostico.';
+
+create unique index if not exists budgets_clinic_codefy_uq
+  on crm.budgets (clinic_id, codefy_id) where codefy_id is not null;
+create index if not exists budgets_clinic_status_idx on crm.budgets (clinic_id, status);
+create index if not exists budgets_patient_idx on crm.budgets (patient_id);
+create index if not exists budgets_lead_idx on crm.budgets (lead_id);
+create index if not exists budgets_clinic_presented_idx on crm.budgets (clinic_id, presented_at);
+create index if not exists budgets_clinic_valid_until_idx on crm.budgets (clinic_id, valid_until);
+create index if not exists budgets_clinic_reconc_idx on crm.budgets (clinic_id, reconciliation_status);
+
+drop trigger if exists trg_budgets_touch_updated_at on crm.budgets;
+create trigger trg_budgets_touch_updated_at
+  before update on crm.budgets
+  for each row execute function crm.fn_touch_updated_at();
+
+grant select, insert, update on crm.budgets to authenticated;
+grant all on crm.budgets to service_role;
+
+alter table crm.budgets enable row level security;
+
+drop policy if exists budgets_select_scoped on crm.budgets;
+create policy budgets_select_scoped
+  on crm.budgets
+  for select to authenticated
+  using (
+    crm.is_staff_3s()
+    or (crm.user_has_clinic_access(clinic_id) and crm.module_enabled_for_clinic(clinic_id))
+  );
+
+drop policy if exists budgets_insert_manage on crm.budgets;
+create policy budgets_insert_manage
+  on crm.budgets
+  for insert to authenticated
+  with check (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  );
+
+drop policy if exists budgets_update_manage on crm.budgets;
+create policy budgets_update_manage
+  on crm.budgets
+  for update to authenticated
+  using (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  )
+  with check (
+    crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+  );
+
+===== END RAW STATEMENTS =====
