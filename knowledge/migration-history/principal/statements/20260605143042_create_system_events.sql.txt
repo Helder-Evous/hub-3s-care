@@ -1,0 +1,66 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260605143042
+Name: create_system_events
+Statement count: 1
+SHA-256: 52177bb144d04d138dc3fe52e24b247c1482d59544376904529f296aaa785f6a
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+
+-- ─────────────────────────────────────────────
+-- system_events: log de eventos para agentes IA
+-- ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.system_events (
+  id             uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at     timestamptz NOT NULL    DEFAULT now(),
+  event_type     text        NOT NULL,
+  entity_type    text,
+  entity_id      uuid,
+  clinic_id      uuid        REFERENCES public.clinics(id) ON DELETE SET NULL,
+  onboarding_id  uuid        REFERENCES public.onboardings(id) ON DELETE SET NULL,
+  sale_id        uuid        REFERENCES public.sales(id) ON DELETE SET NULL,
+  user_id        uuid        REFERENCES auth.users(id) ON DELETE SET NULL,
+  source         text        NOT NULL DEFAULT 'app',
+  payload        jsonb,
+  processed      boolean     NOT NULL DEFAULT false,
+  processed_at   timestamptz,
+  error_message  text
+);
+
+-- Índices de consulta frequente
+CREATE INDEX IF NOT EXISTS idx_system_events_event_type  ON public.system_events (event_type);
+CREATE INDEX IF NOT EXISTS idx_system_events_clinic_id   ON public.system_events (clinic_id);
+CREATE INDEX IF NOT EXISTS idx_system_events_created_at  ON public.system_events (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_system_events_processed   ON public.system_events (processed) WHERE processed = false;
+
+-- ─── RLS ───────────────────────────────────────
+ALTER TABLE public.system_events ENABLE ROW LEVEL SECURITY;
+
+-- Leitura: qualquer usuário autenticado
+CREATE POLICY "system_events_select"
+  ON public.system_events FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Inserção: qualquer usuário autenticado (frontend usa publishable key)
+CREATE POLICY "system_events_insert"
+  ON public.system_events FOR INSERT
+  TO authenticated
+  WITH CHECK (true);
+
+-- Update/delete: somente service_role (agentes backend futuros)
+CREATE POLICY "system_events_update_service"
+  ON public.system_events FOR UPDATE
+  TO service_role
+  USING (true);
+
+===== END RAW STATEMENTS =====

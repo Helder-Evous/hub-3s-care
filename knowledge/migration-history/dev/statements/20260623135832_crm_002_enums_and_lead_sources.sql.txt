@@ -1,0 +1,121 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623135832
+Name: crm_002_enums_and_lead_sources
+Statement count: 1
+SHA-256: e9a1985d12024de77eff0aab32964e0586e8415ef723d2b2b0675b1ac0819479
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+do $$ begin
+  create type crm.crm_role as enum
+    ('super_admin_3s', 'gestor_3s', 'cliente', 'gestor_unidade', 'crc');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.patient_status as enum
+    ('prospecto', 'ativo', 'inativo', 'descartado');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.lead_stage as enum
+    ('novo', 'agendado', 'compareceu', 'em_avaliacao',
+     'orcamento', 'efetivado', 'pos_venda', 'perdido');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.appointment_status as enum
+    ('agendado', 'confirmado', 'remarcado', 'compareceu', 'faltou', 'cancelado');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.budget_status as enum
+    ('rascunho', 'emitido', 'aceito', 'rejeitado', 'expirado', 'cancelado');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.activity_type as enum
+    ('ligacao', 'whatsapp', 'nota', 'visita', 'email', 'outro');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.source_category as enum
+    ('paga', 'organica', 'interna', 'importacao', 'sistema');
+exception when duplicate_object then null; end $$;
+
+do $$ begin
+  create type crm.reconciliation_status as enum
+    ('nao_aplicavel', 'pendente', 'conciliado', 'divergente', 'ignorado');
+exception when duplicate_object then null; end $$;
+
+create table if not exists crm.lead_sources (
+  id          uuid primary key default gen_random_uuid(),
+  key         text not null,
+  label       text not null,
+  category    crm.source_category not null,
+  managed_by  text not null default 'system',
+  clinic_id   uuid references public.clinics (id) on delete cascade,
+  active      boolean not null default true,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  constraint lead_sources_managed_by_chk
+    check (managed_by in ('system', 'clinic')),
+  constraint lead_sources_scope_chk check (
+    (managed_by = 'system' and clinic_id is null) or
+    (managed_by = 'clinic'  and clinic_id is not null)
+  )
+);
+
+create unique index if not exists lead_sources_system_key_uq
+  on crm.lead_sources (key)
+  where managed_by = 'system';
+
+create unique index if not exists lead_sources_clinic_key_uq
+  on crm.lead_sources (clinic_id, key)
+  where managed_by = 'clinic';
+
+comment on table crm.lead_sources is
+  'Catalogo de origens de lead (atribuicao de funil). Origens canonicas sao '
+  'system-managed e globais (key unico global); clinicas poderao cadastrar '
+  'origens proprias (key unico por clinic_id).';
+comment on column crm.lead_sources.key is
+  'Chave estavel imutavel usada em integracoes e KPIs. Nao reaproveitar. '
+  'Unica globalmente para system; unica por clinic_id para clinic.';
+comment on column crm.lead_sources.managed_by is
+  'system = canonica/global (nao editavel pela clinica); clinic = criada pela clinica.';
+
+insert into crm.lead_sources (key, label, category, managed_by) values
+  ('meta_ads',            'Meta (Ads)',         'paga',       'system'),
+  ('google_ads',          'Google (Ads)',       'paga',       'system'),
+  ('indicacao',           'Indicação',          'organica',   'system'),
+  ('projeto_escola',      'Projeto Escola',     'interna',    'system'),
+  ('whatsapp_organico',   'WhatsApp Orgânico',  'organica',   'system'),
+  ('instagram_organico',  'Instagram Orgânico', 'organica',   'system'),
+  ('facebook_organico',   'Facebook Orgânico',  'organica',   'system'),
+  ('site',                'Site',               'organica',   'system'),
+  ('reativacao',          'Reativação',         'sistema',    'system'),
+  ('importacao',          'Importação',         'importacao', 'system'),
+  ('outros',              'Outros',             'organica',   'system')
+on conflict (key) where managed_by = 'system' do nothing;
+
+grant select on crm.lead_sources to authenticated;
+grant all    on crm.lead_sources to service_role;
+
+alter table crm.lead_sources enable row level security;
+
+drop policy if exists lead_sources_select_system on crm.lead_sources;
+create policy lead_sources_select_system
+  on crm.lead_sources
+  for select
+  to authenticated
+  using (managed_by = 'system');
+
+===== END RAW STATEMENTS =====

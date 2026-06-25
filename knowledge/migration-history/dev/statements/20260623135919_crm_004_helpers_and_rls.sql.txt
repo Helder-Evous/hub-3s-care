@@ -1,0 +1,175 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623135919
+Name: crm_004_helpers_and_rls
+Statement count: 1
+SHA-256: db3d02cb113e241457a19aece75820d09bf89b38eb8f7b6e6488cebe8cf95391
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create or replace function crm.current_user_role()
+returns crm.crm_role
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select up.role
+  from crm.user_profiles up
+  where up.id = (select auth.uid()) and up.active
+  limit 1
+$$;
+
+create or replace function crm.is_super_admin_3s()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(crm.current_user_role() = 'super_admin_3s', false)
+$$;
+
+create or replace function crm.is_staff_3s()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select coalesce(crm.current_user_role() in ('super_admin_3s', 'gestor_3s'), false)
+$$;
+
+create or replace function crm.user_has_clinic_access(p_clinic_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select crm.is_staff_3s() or exists (
+    select 1
+    from crm.user_units uu
+    where uu.user_id = (select auth.uid())
+      and uu.clinic_id = p_clinic_id
+      and uu.active
+  )
+$$;
+
+create or replace function crm.module_enabled_for_clinic(p_clinic_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from crm.module_clinics mc
+    where mc.clinic_id = p_clinic_id and mc.enabled
+  )
+$$;
+
+create or replace function crm.user_can_manage_module(p_clinic_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select crm.is_staff_3s() or (
+    crm.current_user_role() in ('gestor_unidade', 'crc')
+    and crm.user_has_clinic_access(p_clinic_id)
+  )
+$$;
+
+comment on function crm.current_user_role() is 'Papel do auth.uid() (NULL se sem perfil ativo).';
+comment on function crm.is_super_admin_3s() is 'True se o usuario logado e super_admin_3s.';
+comment on function crm.is_staff_3s() is 'True se staff 3S (super_admin_3s ou gestor_3s) — visao global.';
+comment on function crm.user_has_clinic_access(uuid) is 'True se staff ou vinculo ativo em user_units.';
+comment on function crm.module_enabled_for_clinic(uuid) is 'True se a clinica tem o modulo habilitado.';
+comment on function crm.user_can_manage_module(uuid) is
+  'Autorizacao de ESCRITA de dados operacionais no escopo de uma clinica '
+  '(staff, ou gestor_unidade/crc com acesso). IMPORTANTE: '
+  '(1) NAO participa de nenhuma policy desta Migration 004; '
+  '(2) sera consumido apenas pelas migrations de DOMINIO (patients/leads/'
+  'appointments/budgets); '
+  '(3) NAO concede gestao de acessos (roles/user_units/module_clinics); '
+  '(4) NAO substitui is_super_admin_3s() — gestao de acessos e exclusiva do super_admin.';
+
+revoke execute on function
+  crm.current_user_role(),
+  crm.is_super_admin_3s(),
+  crm.is_staff_3s(),
+  crm.user_has_clinic_access(uuid),
+  crm.module_enabled_for_clinic(uuid),
+  crm.user_can_manage_module(uuid)
+from public;
+
+grant execute on function
+  crm.current_user_role(),
+  crm.is_super_admin_3s(),
+  crm.is_staff_3s(),
+  crm.user_has_clinic_access(uuid),
+  crm.module_enabled_for_clinic(uuid),
+  crm.user_can_manage_module(uuid)
+to authenticated, service_role;
+
+grant update on crm.user_profiles to authenticated;
+grant insert, update, delete on crm.user_units to authenticated;
+grant select, insert, update, delete on crm.module_clinics to authenticated;
+
+drop policy if exists user_profiles_select_staff on crm.user_profiles;
+create policy user_profiles_select_staff
+  on crm.user_profiles
+  for select to authenticated
+  using (crm.is_staff_3s());
+
+drop policy if exists user_profiles_update_admin on crm.user_profiles;
+create policy user_profiles_update_admin
+  on crm.user_profiles
+  for update to authenticated
+  using (crm.is_super_admin_3s())
+  with check (crm.is_super_admin_3s());
+
+drop policy if exists user_units_select_staff on crm.user_units;
+create policy user_units_select_staff
+  on crm.user_units
+  for select to authenticated
+  using (crm.is_staff_3s());
+
+drop policy if exists user_units_manage_admin on crm.user_units;
+create policy user_units_manage_admin
+  on crm.user_units
+  for all to authenticated
+  using (crm.is_super_admin_3s())
+  with check (crm.is_super_admin_3s());
+
+drop policy if exists module_clinics_select_scoped on crm.module_clinics;
+create policy module_clinics_select_scoped
+  on crm.module_clinics
+  for select to authenticated
+  using (crm.user_has_clinic_access(clinic_id));
+
+drop policy if exists module_clinics_manage_admin on crm.module_clinics;
+create policy module_clinics_manage_admin
+  on crm.module_clinics
+  for all to authenticated
+  using (crm.is_super_admin_3s())
+  with check (crm.is_super_admin_3s());
+
+drop policy if exists lead_sources_select_clinic on crm.lead_sources;
+create policy lead_sources_select_clinic
+  on crm.lead_sources
+  for select to authenticated
+  using (managed_by = 'clinic' and crm.user_has_clinic_access(clinic_id));
+
+===== END RAW STATEMENTS =====

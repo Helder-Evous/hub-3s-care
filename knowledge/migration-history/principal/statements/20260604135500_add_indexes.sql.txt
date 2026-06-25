@@ -1,0 +1,43 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260604135500
+Name: add_indexes
+Statement count: 1
+SHA-256: 8f0429176f1159c5145a3164ea1974f57a8121a3edc43e22527a0b0164ea477e
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+CREATE INDEX IF NOT EXISTS idx_clinics_status ON public.clinics(status);
+CREATE INDEX IF NOT EXISTS idx_clinics_external_id ON public.clinics(external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_channels_clinic_id ON public.channels(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_channels_status ON public.channels(status);
+CREATE INDEX IF NOT EXISTS idx_channels_type ON public.channels(channel_type);
+CREATE INDEX IF NOT EXISTS idx_channels_clinic_active ON public.channels(clinic_id, status) WHERE deactivated_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_channels_phone_number_id ON public.channels(phone_number_id) WHERE phone_number_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_monitoring_latest ON public.channel_monitoring(channel_id, is_latest) WHERE is_latest = true;
+CREATE INDEX IF NOT EXISTS idx_monitoring_last_check ON public.channel_monitoring(last_check DESC);
+CREATE INDEX IF NOT EXISTS idx_monitoring_channel_id ON public.channel_monitoring(channel_id);
+CREATE INDEX IF NOT EXISTS idx_contingency_clinic_id ON public.contingency_items(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_clinic_id ON public.alerts(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_channel_id ON public.alerts(channel_id) WHERE channel_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_alerts_open_by_clinic ON public.alerts(clinic_id, severity, created_at DESC) WHERE status != 'resolvido';
+CREATE INDEX IF NOT EXISTS idx_alerts_created_at ON public.alerts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_meta_templates_clinic_id ON public.meta_templates(clinic_id);
+CREATE INDEX IF NOT EXISTS idx_meta_templates_channel_id ON public.meta_templates(channel_id);
+CREATE INDEX IF NOT EXISTS idx_meta_templates_status ON public.meta_templates(status);
+CREATE INDEX IF NOT EXISTS idx_template_metrics_template_date ON public.meta_template_metrics(template_id, metric_date DESC);
+CREATE INDEX IF NOT EXISTS idx_template_metrics_clinic_date ON public.meta_template_metrics(clinic_id, metric_date DESC);
+CREATE INDEX IF NOT EXISTS idx_volume_channel_date ON public.api_volume_snapshots(channel_id, snapshot_date DESC);
+CREATE INDEX IF NOT EXISTS idx_volume_clinic_date ON public.api_volume_snapshots(clinic_id, snapshot_date DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON public.audit_logs(entity, entity_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON public.audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON public.audit_logs(actor) WHERE actor IS NOT NULL;
+===== END RAW STATEMENTS =====

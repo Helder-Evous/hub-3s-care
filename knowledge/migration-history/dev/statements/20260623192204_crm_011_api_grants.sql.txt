@@ -1,0 +1,27 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623192204
+Name: crm_011_api_grants
+Statement count: 1
+SHA-256: ab49e281e835ac41573faabe603fbfd398944a830954dfdb610ba0e63cd86850
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+grant usage on type crm.crm_role              to authenticated;
+grant usage on type crm.patient_status        to authenticated;
+grant usage on type crm.lead_stage            to authenticated;
+grant usage on type crm.appointment_status    to authenticated;
+grant usage on type crm.budget_status         to authenticated;
+grant usage on type crm.activity_type         to authenticated;
+grant usage on type crm.source_category       to authenticated;
+grant usage on type crm.reconciliation_status to authenticated;
+
+===== END RAW STATEMENTS =====

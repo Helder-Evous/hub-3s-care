@@ -1,0 +1,221 @@
+Environment: DEV
+Project ID: xcqfdnymadeqeuacqotu
+Version: 20260623140136
+Name: crm_010_stage_derivation
+Statement count: 1
+SHA-256: 85e1decdae540a4f95fdccb74fb643099f621fb2028d4e465ed2f11f574b6423
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create table if not exists crm.lead_stage_history (
+  id            uuid primary key default gen_random_uuid(),
+  clinic_id     uuid not null,
+  lead_id       uuid not null references crm.leads (id) on delete cascade,
+  patient_id    uuid not null,
+  from_stage    crm.lead_stage,
+  to_stage      crm.lead_stage not null,
+  reason        text,
+  source_table  text,
+  source_id     uuid,
+  changed_at    timestamptz not null default now(),
+  changed_by    uuid references crm.user_profiles (id) on delete set null
+);
+
+comment on table crm.lead_stage_history is
+  'Historico append-only das transicoes de leads.current_stage. Escrito apenas pela funcao de recalculo.';
+
+create index if not exists lead_stage_history_lead_idx on crm.lead_stage_history (lead_id, changed_at);
+create index if not exists lead_stage_history_clinic_idx on crm.lead_stage_history (clinic_id, changed_at);
+
+grant select on crm.lead_stage_history to authenticated;
+grant all    on crm.lead_stage_history to service_role;
+
+alter table crm.lead_stage_history enable row level security;
+
+drop policy if exists lead_stage_history_select_scoped on crm.lead_stage_history;
+create policy lead_stage_history_select_scoped
+  on crm.lead_stage_history
+  for select to authenticated
+  using (
+    crm.is_staff_3s()
+    or (crm.user_has_clinic_access(clinic_id) and crm.module_enabled_for_clinic(clinic_id))
+  );
+
+create or replace function crm.lead_stage_rank(p_stage crm.lead_stage)
+returns int
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_stage
+    when 'novo'         then 0
+    when 'agendado'     then 1
+    when 'compareceu'   then 2
+    when 'em_avaliacao' then 3
+    when 'orcamento'    then 4
+    when 'efetivado'    then 5
+    when 'pos_venda'    then 6
+    when 'perdido'      then -1
+  end
+$$;
+
+comment on function crm.lead_stage_rank(crm.lead_stage) is
+  'Rank ordinal do estagio do funil (mapa explicito). perdido=-1.';
+
+create or replace function crm.fn_recalc_lead_stage(
+  p_lead_id      uuid,
+  p_source_table text default null,
+  p_source_id    uuid default null,
+  p_reason       text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current   crm.lead_stage;
+  v_lost      timestamptz;
+  v_clinic    uuid;
+  v_patient   uuid;
+  v_rank      int := 0;
+  v_base_rank int;
+  v_new       crm.lead_stage;
+begin
+  if p_lead_id is null then
+    return;
+  end if;
+
+  select current_stage, lost_at, clinic_id, patient_id
+    into v_current, v_lost, v_clinic, v_patient
+  from crm.leads
+  where id = p_lead_id;
+
+  if not found then
+    return;
+  end if;
+
+  if exists (
+    select 1 from crm.appointments a
+    where a.lead_id = p_lead_id
+      and a.status in ('agendado', 'confirmado', 'remarcado')
+  ) then
+    v_rank := greatest(v_rank, 1);
+  end if;
+
+  if exists (
+    select 1 from crm.appointments a
+    where a.lead_id = p_lead_id and a.status = 'compareceu'
+  ) then
+    v_rank := greatest(v_rank, 2);
+  end if;
+
+  if exists (
+    select 1 from crm.budgets b
+    where b.lead_id = p_lead_id
+      and b.status in ('emitido', 'aceito', 'rejeitado', 'expirado')
+  ) then
+    v_rank := greatest(v_rank, 4);
+  end if;
+
+  if v_current = 'perdido' then
+    v_base_rank := 0;
+  else
+    v_base_rank := crm.lead_stage_rank(v_current);
+  end if;
+  v_rank := greatest(v_rank, v_base_rank);
+
+  v_new := (case v_rank
+    when 0 then 'novo'
+    when 1 then 'agendado'
+    when 2 then 'compareceu'
+    when 3 then 'em_avaliacao'
+    when 4 then 'orcamento'
+    when 5 then 'efetivado'
+    when 6 then 'pos_venda'
+    else 'novo'
+  end)::crm.lead_stage;
+
+  if v_lost is not null then
+    v_new := 'perdido';
+  end if;
+
+  if v_new is distinct from v_current then
+    update crm.leads
+      set current_stage = v_new
+    where id = p_lead_id;
+
+    insert into crm.lead_stage_history
+      (clinic_id, lead_id, patient_id, from_stage, to_stage, reason, source_table, source_id, changed_by)
+    values
+      (v_clinic, p_lead_id, v_patient, v_current, v_new, p_reason, p_source_table, p_source_id, (select auth.uid()));
+  end if;
+end;
+$$;
+
+comment on function crm.fn_recalc_lead_stage(uuid, text, uuid, text) is
+  'Escritora oficial de leads.current_stage: maior estagio alcancado, perdido override, historico so em mudanca real.';
+
+create or replace function crm.fn_trg_recalc_lead_stage()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_lead uuid;
+begin
+  if tg_table_name = 'leads' then
+    v_lead := new.id;
+  else
+    v_lead := new.lead_id;
+  end if;
+  perform crm.fn_recalc_lead_stage(v_lead, tg_table_name, new.id, null);
+  return null;
+end;
+$$;
+
+comment on function crm.fn_trg_recalc_lead_stage() is
+  'Wrapper de trigger: chama crm.fn_recalc_lead_stage com o lead correto.';
+
+revoke execute on function crm.fn_recalc_lead_stage(uuid, text, uuid, text) from public;
+revoke execute on function crm.fn_trg_recalc_lead_stage() from public;
+revoke execute on function crm.lead_stage_rank(crm.lead_stage) from public;
+grant execute on function crm.fn_recalc_lead_stage(uuid, text, uuid, text) to service_role;
+grant execute on function crm.lead_stage_rank(crm.lead_stage) to authenticated, service_role;
+
+drop trigger if exists trg_appointments_recalc_stage on crm.appointments;
+create trigger trg_appointments_recalc_stage
+  after insert or update of status on crm.appointments
+  for each row execute function crm.fn_trg_recalc_lead_stage();
+
+drop trigger if exists trg_budgets_recalc_stage on crm.budgets;
+create trigger trg_budgets_recalc_stage
+  after insert or update of status on crm.budgets
+  for each row execute function crm.fn_trg_recalc_lead_stage();
+
+drop trigger if exists trg_leads_recalc_stage_on_lost on crm.leads;
+create trigger trg_leads_recalc_stage_on_lost
+  after update of lost_at on crm.leads
+  for each row execute function crm.fn_trg_recalc_lead_stage();
+
+revoke update on crm.leads from authenticated;
+grant update (
+  owner_id,
+  source_id,
+  lost_at,
+  lost_reason,
+  lost_by,
+  source_system,
+  external_ref
+) on crm.leads to authenticated;
+
+===== END RAW STATEMENTS =====

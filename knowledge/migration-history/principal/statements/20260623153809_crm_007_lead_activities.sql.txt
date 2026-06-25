@@ -1,0 +1,83 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260623153809
+Name: crm_007_lead_activities
+Statement count: 1
+SHA-256: 5192b19d28319c8729a024d64ecb365c830a1ff3fdb37b465d67e65db665d228
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create table if not exists crm.lead_activities (
+  id             uuid primary key default gen_random_uuid(),
+  clinic_id      uuid not null,
+  patient_id     uuid not null,
+  lead_id        uuid not null,
+  activity_type  crm.activity_type not null,
+  occurred_at    timestamptz not null default now(),
+  performed_by   uuid not null,
+  summary        text,
+  metadata       jsonb not null default '{}'::jsonb,
+  created_at     timestamptz not null default now(),
+  constraint lead_activities_lead_patient_fk foreign key (lead_id, patient_id)
+    references crm.leads (id, patient_id) on delete cascade,
+  constraint lead_activities_patient_clinic_fk foreign key (patient_id, clinic_id)
+    references crm.patients (id, clinic_id) on delete cascade,
+  constraint lead_activities_clinic_fk foreign key (clinic_id) references public.clinics (id) on delete restrict,
+  constraint lead_activities_performed_by_fk foreign key (performed_by) references crm.user_profiles (id) on delete restrict
+);
+
+comment on table crm.lead_activities is 'Log append-only de toques manuais/relevantes do CRC sobre um lead.';
+comment on column crm.lead_activities.summary is
+  'Campo operacional PRINCIPAL da atividade. NAO utilizar para dados clinicos/de saude.';
+
+create index if not exists lead_activities_lead_occurred_idx on crm.lead_activities (lead_id, occurred_at);
+create index if not exists lead_activities_clinic_occurred_idx on crm.lead_activities (clinic_id, occurred_at);
+create index if not exists lead_activities_patient_idx on crm.lead_activities (patient_id);
+create index if not exists lead_activities_performed_by_idx on crm.lead_activities (performed_by);
+
+create or replace function crm.fn_touch_lead_activity()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+begin
+  update crm.leads l
+  set last_activity_at = greatest(coalesce(l.last_activity_at, new.occurred_at), new.occurred_at),
+      last_contact_at  = case
+        when new.activity_type in ('ligacao', 'whatsapp', 'email', 'visita')
+          then greatest(coalesce(l.last_contact_at, new.occurred_at), new.occurred_at)
+        else l.last_contact_at end
+  where l.id = new.lead_id and l.patient_id = new.patient_id;
+  return null;
+end;
+$$;
+comment on function crm.fn_touch_lead_activity() is
+  'AFTER INSERT em lead_activities: atualiza leads.last_activity_at/last_contact_at via GREATEST.';
+
+drop trigger if exists trg_lead_activities_touch on crm.lead_activities;
+create trigger trg_lead_activities_touch after insert on crm.lead_activities
+  for each row execute function crm.fn_touch_lead_activity();
+
+grant select, insert on crm.lead_activities to authenticated;
+grant all on crm.lead_activities to service_role;
+
+alter table crm.lead_activities enable row level security;
+
+drop policy if exists lead_activities_select_scoped on crm.lead_activities;
+create policy lead_activities_select_scoped on crm.lead_activities
+  for select to authenticated
+  using (crm.is_staff_3s() or (crm.user_has_clinic_access(clinic_id) and crm.module_enabled_for_clinic(clinic_id)));
+
+drop policy if exists lead_activities_insert_manage on crm.lead_activities;
+create policy lead_activities_insert_manage on crm.lead_activities
+  for insert to authenticated
+  with check (crm.user_can_manage_module(clinic_id) and crm.module_enabled_for_clinic(clinic_id)
+              and (performed_by = (select auth.uid()) or crm.is_staff_3s()));
+
+===== END RAW STATEMENTS =====

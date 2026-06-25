@@ -1,0 +1,31 @@
+Environment: Principal
+Project ID: nndvcsdevbxpgsccyimm
+Version: 20260623153559
+Name: crm_001_schema_and_grants
+Statement count: 1
+SHA-256: 13415113f8f659c71bd9891c65b30b0c8f1e99aba3b387e0350198ac3bfdb635
+Source: supabase_migrations.schema_migrations.statements
+Captured at: 2026-06-25
+Execution status: historical record only — do not execute
+
+Conteúdo bruto preservado abaixo, exatamente como registrado em
+`statements` (itens do array unidos por LF, na ordem original).
+O SHA-256 acima cobre exatamente os bytes entre os marcadores BEGIN/END
+(itens unidos por LF, sem newline final).
+Sem rollback registrado para esta migration.
+
+===== BEGIN RAW STATEMENTS (canonical, SHA-256 target) =====
+create schema if not exists crm;
+
+comment on schema crm is
+  'Modulo Controle de Lead — funil clinico do paciente (lead -> agendamento -> '
+  'comparecimento -> orcamento -> efetivacao -> receita clinica -> pos-venda). '
+  'Isolado de public; integra por clinic_id (public.clinics) e pelos barramentos '
+  'public.system_events / public.ai_tasks. Identidade via auth.users.';
+
+revoke all on schema crm from public;
+
+grant usage on schema crm to authenticated;
+grant usage on schema crm to service_role;
+
+===== END RAW STATEMENTS =====
