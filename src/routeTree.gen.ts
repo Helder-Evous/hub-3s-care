@@ -27,7 +27,9 @@ import { Route as CrmAlertasRouteImport } from './routes/crm.alertas'
 import { Route as ComercialNovaVendaRouteImport } from './routes/comercial.nova-venda'
 import { Route as ClientesIdRouteImport } from './routes/clientes.$id'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as CrmControleLeadIndexRouteImport } from './routes/crm.controle-lead.index'
 import { Route as CrmClinicasIndexRouteImport } from './routes/crm.clinicas.index'
+import { Route as CrmControleLeadIdRouteImport } from './routes/crm.controle-lead.$id'
 import { Route as CrmClinicasIdRouteImport } from './routes/crm.clinicas.$id'
 
 const TvRoute = TvRouteImport.update({
@@ -120,9 +122,19 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CrmControleLeadIndexRoute = CrmControleLeadIndexRouteImport.update({
+  id: '/crm/controle-lead/',
+  path: '/crm/controle-lead/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CrmClinicasIndexRoute = CrmClinicasIndexRouteImport.update({
   id: '/crm/clinicas/',
   path: '/crm/clinicas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmControleLeadIdRoute = CrmControleLeadIdRouteImport.update({
+  id: '/crm/controle-lead/$id',
+  path: '/crm/controle-lead/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmClinicasIdRoute = CrmClinicasIdRouteImport.update({
@@ -151,7 +163,9 @@ export interface FileRoutesByFullPath {
   '/crm/': typeof CrmIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
+  '/crm/controle-lead/$id': typeof CrmControleLeadIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
+  '/crm/controle-lead/': typeof CrmControleLeadIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -173,7 +187,9 @@ export interface FileRoutesByTo {
   '/crm': typeof CrmIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
+  '/crm/controle-lead/$id': typeof CrmControleLeadIdRoute
   '/crm/clinicas': typeof CrmClinicasIndexRoute
+  '/crm/controle-lead': typeof CrmControleLeadIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -196,7 +212,9 @@ export interface FileRoutesById {
   '/crm/': typeof CrmIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/crm/clinicas/$id': typeof CrmClinicasIdRoute
+  '/crm/controle-lead/$id': typeof CrmControleLeadIdRoute
   '/crm/clinicas/': typeof CrmClinicasIndexRoute
+  '/crm/controle-lead/': typeof CrmControleLeadIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -220,7 +238,9 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/onboarding/'
     | '/crm/clinicas/$id'
+    | '/crm/controle-lead/$id'
     | '/crm/clinicas/'
+    | '/crm/controle-lead/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -242,7 +262,9 @@ export interface FileRouteTypes {
     | '/crm'
     | '/onboarding'
     | '/crm/clinicas/$id'
+    | '/crm/controle-lead/$id'
     | '/crm/clinicas'
+    | '/crm/controle-lead'
   id:
     | '__root__'
     | '/'
@@ -264,7 +286,9 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/onboarding/'
     | '/crm/clinicas/$id'
+    | '/crm/controle-lead/$id'
     | '/crm/clinicas/'
+    | '/crm/controle-lead/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,7 +311,9 @@ export interface RootRouteChildren {
   CrmIndexRoute: typeof CrmIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   CrmClinicasIdRoute: typeof CrmClinicasIdRoute
+  CrmControleLeadIdRoute: typeof CrmControleLeadIdRoute
   CrmClinicasIndexRoute: typeof CrmClinicasIndexRoute
+  CrmControleLeadIndexRoute: typeof CrmControleLeadIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -418,11 +444,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/crm/controle-lead/': {
+      id: '/crm/controle-lead/'
+      path: '/crm/controle-lead'
+      fullPath: '/crm/controle-lead/'
+      preLoaderRoute: typeof CrmControleLeadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/crm/clinicas/': {
       id: '/crm/clinicas/'
       path: '/crm/clinicas'
       fullPath: '/crm/clinicas/'
       preLoaderRoute: typeof CrmClinicasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm/controle-lead/$id': {
+      id: '/crm/controle-lead/$id'
+      path: '/crm/controle-lead/$id'
+      fullPath: '/crm/controle-lead/$id'
+      preLoaderRoute: typeof CrmControleLeadIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm/clinicas/$id': {
@@ -455,7 +495,9 @@ const rootRouteChildren: RootRouteChildren = {
   CrmIndexRoute: CrmIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   CrmClinicasIdRoute: CrmClinicasIdRoute,
+  CrmControleLeadIdRoute: CrmControleLeadIdRoute,
   CrmClinicasIndexRoute: CrmClinicasIndexRoute,
+  CrmControleLeadIndexRoute: CrmControleLeadIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
