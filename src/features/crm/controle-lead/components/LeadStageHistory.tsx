@@ -17,9 +17,7 @@ export function LeadStageHistory({ rows }: { rows: LeadStageHistoryRow[] }) {
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Sem mudanças de estágio registradas.
-          </p>
+          <p className="text-sm text-muted-foreground">Sem mudanças de estágio registradas.</p>
         ) : (
           <ol className="space-y-3">
             {rows.map((h) => (

@@ -6,8 +6,9 @@ import { LeadCard } from "./LeadCard";
 import type { LeadBoardCard } from "../types";
 
 export function DraggableLeadCard({ card }: { card: LeadBoardCard }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id: card.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: card.id,
+  });
 
   return (
     <div

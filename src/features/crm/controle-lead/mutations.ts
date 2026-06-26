@@ -93,11 +93,7 @@ export async function createLead(args: {
     owner_id: args.owner_id,
   };
 
-  const { data, error } = await crmSchema()
-    .from("leads")
-    .insert(payload)
-    .select("id")
-    .single();
+  const { data, error } = await crmSchema().from("leads").insert(payload).select("id").single();
   if (error) throw error;
 
   return (data as unknown as { id: string }).id;
@@ -163,9 +159,7 @@ export type CreateActivityInput = {
   summary: string | null;
 };
 
-export async function createLeadActivity(
-  input: CreateActivityInput,
-): Promise<string> {
+export async function createLeadActivity(input: CreateActivityInput): Promise<string> {
   const { data, error } = await crmSchema()
     .from("lead_activities")
     .insert({

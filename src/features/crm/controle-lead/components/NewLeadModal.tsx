@@ -30,8 +30,7 @@ import { useCreateLead, mapMutationError, normalizePhoneBR } from "../mutations"
 export function NewLeadModal() {
   const { user } = useAuth();
   const ownerId = user?.id ?? null;
-  const ownerName =
-    user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Você";
+  const ownerName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Você";
 
   const { data: sources = [], isLoading: loadingSources } = useLeadSources();
   const { data: clinics = [], isLoading: loadingClinics } = useEligibleClinics();
@@ -117,8 +116,7 @@ export function NewLeadModal() {
         <DialogHeader>
           <DialogTitle>Novo Lead</DialogTitle>
           <DialogDescription>
-            Cadastro do lead na sua clínica. Pacientes são deduplicados por
-            telefone.
+            Cadastro do lead na sua clínica. Pacientes são deduplicados por telefone.
           </DialogDescription>
         </DialogHeader>
 
@@ -148,16 +146,10 @@ export function NewLeadModal() {
 
           <div className="grid gap-1.5">
             <Label htmlFor="nl-origem">Origem</Label>
-            <Select
-              value={sourceId}
-              onValueChange={setSourceId}
-              disabled={busy || depsLoading}
-            >
+            <Select value={sourceId} onValueChange={setSourceId} disabled={busy || depsLoading}>
               <SelectTrigger id="nl-origem">
                 <SelectValue
-                  placeholder={
-                    loadingSources ? "Carregando..." : "Selecione a origem (opcional)"
-                  }
+                  placeholder={loadingSources ? "Carregando..." : "Selecione a origem (opcional)"}
                 />
               </SelectTrigger>
               <SelectContent>
@@ -191,9 +183,7 @@ export function NewLeadModal() {
           <div className="grid gap-1.5">
             <Label htmlFor="nl-responsavel">Responsável</Label>
             <Input id="nl-responsavel" value={ownerName} readOnly disabled />
-            <p className="text-xs text-muted-foreground">
-              O lead será atribuído a você.
-            </p>
+            <p className="text-xs text-muted-foreground">O lead será atribuído a você.</p>
           </div>
 
           {formError && (

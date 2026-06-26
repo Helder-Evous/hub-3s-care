@@ -12,12 +12,7 @@ export function LeadColumn({ column }: { column: LeadBoardColumn }) {
   return (
     <div className="flex w-80 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
-        <span
-          className={cn(
-            "text-sm font-semibold",
-            isLost ? "text-critical" : "text-foreground",
-          )}
-        >
+        <span className={cn("text-sm font-semibold", isLost ? "text-critical" : "text-foreground")}>
           {column.label}
         </span>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
@@ -34,13 +29,9 @@ export function LeadColumn({ column }: { column: LeadBoardColumn }) {
         )}
       >
         {column.cards.length === 0 ? (
-          <p className="px-1 py-10 text-center text-xs text-muted-foreground">
-            Nenhum lead
-          </p>
+          <p className="px-1 py-10 text-center text-xs text-muted-foreground">Nenhum lead</p>
         ) : (
-          column.cards.map((card) => (
-            <DraggableLeadCard key={card.id} card={card} />
-          ))
+          column.cards.map((card) => <DraggableLeadCard key={card.id} card={card} />)
         )}
       </div>
     </div>

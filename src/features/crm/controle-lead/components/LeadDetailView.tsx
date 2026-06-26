@@ -29,9 +29,7 @@ export function LeadDetailView({ id }: { id: string }) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <AlertTriangle className="h-8 w-8 text-critical" />
-        <p className="text-sm text-muted-foreground">
-          Não foi possível carregar o lead.
-        </p>
+        <p className="text-sm text-muted-foreground">Não foi possível carregar o lead.</p>
         <button
           type="button"
           onClick={() => refetch()}
@@ -47,9 +45,7 @@ export function LeadDetailView({ id }: { id: string }) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center">
         <SearchX className="h-8 w-8 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">
-          Lead não encontrado (ou sem acesso).
-        </p>
+        <p className="text-sm text-muted-foreground">Lead não encontrado (ou sem acesso).</p>
       </div>
     );
   }

@@ -60,9 +60,7 @@ export function LeadCard({ card, dragging = false }: Props) {
           )}
         >
           <Clock className="h-3 w-3 shrink-0" />
-          {semContato
-            ? "Sem contato"
-            : `Últ. contato ${formatRelative(card.last_contact_at)}`}
+          {semContato ? "Sem contato" : `Últ. contato ${formatRelative(card.last_contact_at)}`}
         </span>
       </div>
 

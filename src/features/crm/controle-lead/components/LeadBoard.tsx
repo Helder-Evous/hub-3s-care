@@ -17,9 +17,7 @@ import { LeadCard } from "./LeadCard";
 import type { LeadBoardCard, LeadBoardColumn, LeadStageValue } from "../types";
 
 export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
-  const [columns, setColumns] = useState<LeadBoardColumn[]>(() =>
-    groupLeadsByStage(leads),
-  );
+  const [columns, setColumns] = useState<LeadBoardColumn[]>(() => groupLeadsByStage(leads));
   const [activeCard, setActiveCard] = useState<LeadBoardCard | null>(null);
 
   // Re-sincroniza com os dados reais quando a query muda (refetch/cache).
@@ -29,9 +27,7 @@ export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
 
   // distance:6 => um clique simples (sem arrasto) nao inicia drag, preservando
   // o link "Abrir" do cartao.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   function findCard(id: string): LeadBoardCard | null {
     for (const col of columns) {
@@ -58,28 +54,20 @@ export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
       const without = prev.map((col) => {
         const hit = col.cards.find((c) => c.id === cardId);
         if (hit) moved = hit;
-        return hit
-          ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) }
-          : col;
+        return hit ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) } : col;
       });
       if (!moved || moved.current_stage === targetStage) return prev;
 
       // Movimento apenas visual: ajusta current_stage no estado LOCAL.
       const movedCard: LeadBoardCard = { ...moved, current_stage: targetStage };
       return without.map((col) =>
-        col.stage === targetStage
-          ? { ...col, cards: [movedCard, ...col.cards] }
-          : col,
+        col.stage === targetStage ? { ...col, cards: [movedCard, ...col.cards] } : col,
       );
     });
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((column) => (
           <LeadColumn key={column.stage} column={column} />

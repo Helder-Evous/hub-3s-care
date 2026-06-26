@@ -98,9 +98,7 @@ export function NewActivityModal({ clinicId, leadId, patientId }: Props) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Nova atividade</DialogTitle>
-          <DialogDescription>
-            Registre um contato realizado com o paciente.
-          </DialogDescription>
+          <DialogDescription>Registre um contato realizado com o paciente.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">

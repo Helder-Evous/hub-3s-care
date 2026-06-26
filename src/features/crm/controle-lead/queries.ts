@@ -46,18 +46,13 @@ const LEADS_BOARD_SELECT =
 
 /**
  * Board de leads do operador (todas as clinicas as quais ele tem acesso/RLS).
- * NOTA: `supabase` esta tipado para o schema `public`; o schema `crm` ainda nao
- * esta no `types.ts` oficial (ver crm-types.ts temporario), por isso o cast em
- * `.schema("crm")`. Substituir quando o types.ts public+crm for gerado.
+ * Usa o helper `crmSchema()` (cast temporario para o schema `crm`; ver crm-types.ts).
  */
 export function useLeadsBoard() {
   return useQuery({
     queryKey: ["crm", "controle-lead", "board"],
     queryFn: async (): Promise<LeadBoardCard[]> => {
-      const { data, error } = await (supabase as unknown as {
-        schema: (s: string) => ReturnType<typeof supabase.from>;
-      })
-        .schema("crm")
+      const { data, error } = await crmSchema()
         .from("leads")
         .select(LEADS_BOARD_SELECT)
         .order("created_at", { ascending: false });
@@ -139,9 +134,7 @@ export function useEligibleClinics() {
         .select("clinic_id")
         .eq("enabled", true);
       if (error) throw error;
-      return ((data ?? []) as unknown as { clinic_id: string }[]).map(
-        (r) => r.clinic_id,
-      );
+      return ((data ?? []) as unknown as { clinic_id: string }[]).map((r) => r.clinic_id);
     },
   });
 }
@@ -291,8 +284,7 @@ export function useLeadDetail(id: string) {
         budgets: (r.budgets ?? [])
           .map((bd) => ({
             id: bd.id,
-            total_amount:
-              bd.total_amount == null ? null : Number(bd.total_amount),
+            total_amount: bd.total_amount == null ? null : Number(bd.total_amount),
             currency: bd.currency,
             status: bd.status,
             presented_at: bd.presented_at,

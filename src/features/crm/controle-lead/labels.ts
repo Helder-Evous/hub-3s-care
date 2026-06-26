@@ -45,24 +45,6 @@ export const SOURCE_CATEGORY_TONE: Record<SourceCategory, BadgeTone> = {
   sistema: "muted",
 };
 
-/**
- * Opcoes ESTATICAS de origem para o modal "Novo Lead" (sem consulta ao banco).
- * Espelham as origens canonicas do catalogo crm.lead_sources.
- */
-export const SOURCE_OPTIONS: { key: string; label: string }[] = [
-  { key: "meta_ads", label: "Meta (Ads)" },
-  { key: "google_ads", label: "Google (Ads)" },
-  { key: "indicacao", label: "Indicação" },
-  { key: "projeto_escola", label: "Projeto Escola" },
-  { key: "whatsapp_organico", label: "WhatsApp Orgânico" },
-  { key: "instagram_organico", label: "Instagram Orgânico" },
-  { key: "facebook_organico", label: "Facebook Orgânico" },
-  { key: "site", label: "Site" },
-  { key: "reativacao", label: "Reativação" },
-  { key: "importacao", label: "Importação" },
-  { key: "outros", label: "Outros" },
-];
-
 /** Tom do badge por estagio (cabecalho/detalhe). */
 export const LEAD_STAGE_TONE: Record<LeadStage, BadgeTone> = {
   novo: "muted",

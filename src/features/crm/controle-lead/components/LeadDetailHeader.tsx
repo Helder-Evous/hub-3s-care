@@ -3,11 +3,7 @@
 import { Phone, User, CalendarDays, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/StatusBadge";
-import {
-  LEAD_STAGE_LABELS,
-  LEAD_STAGE_TONE,
-  SOURCE_CATEGORY_TONE,
-} from "../labels";
+import { LEAD_STAGE_LABELS, LEAD_STAGE_TONE, SOURCE_CATEGORY_TONE } from "../labels";
 import { formatDateTime } from "../utils";
 import type { LeadDetailData } from "../types";
 
@@ -24,9 +20,7 @@ function Field({
     <div className="flex items-start gap-2">
       <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0">
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          {label}
-        </div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
         <div className="truncate text-sm font-medium">{children}</div>
       </div>
     </div>
@@ -35,8 +29,7 @@ function Field({
 
 export function LeadDetailHeader({ lead }: { lead: LeadDetailData }) {
   const p = lead.patient;
-  const responsavel =
-    lead.owner_name ?? (lead.owner_id ? "Atribuído" : "Sem responsável");
+  const responsavel = lead.owner_name ?? (lead.owner_id ? "Atribuído" : "Sem responsável");
 
   return (
     <Card>
