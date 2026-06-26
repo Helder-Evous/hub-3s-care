@@ -59,6 +59,9 @@ const nav: NavItem[] = [
         { to: "/crm/alertas", label: "Alertas CRM", icon: Bell },
         { to: "/tv", label: "Modo TV CRM", icon: Tv },
       ]},
+      { section: "Controle de Lead", children: [
+        { to: "/crm/controle-lead", label: "Board de Leads", icon: ClipboardList },
+      ]},
       { section: "Em breve", children: [
         { to: "/crm", label: "Tráfego Pago", icon: TrendingUp },
         { to: "/crm", label: "Gestão / Consultoria", icon: Users },
