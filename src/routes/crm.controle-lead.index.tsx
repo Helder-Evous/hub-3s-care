@@ -17,7 +17,8 @@ function Header() {
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Controle de Lead</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Board do funil clínico, agrupado por estágio. Arraste cartões para
+          Board operacional, agrupado pela próxima ação esperada do CRC
+          (projeção a partir dos agendamentos). Arraste cartões para
           reorganizar — movimento apenas visual, ainda não é salvo.
         </p>
       </div>

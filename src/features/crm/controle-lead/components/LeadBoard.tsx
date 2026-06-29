@@ -11,18 +11,21 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { groupLeadsByStage } from "../utils";
+import { groupLeadsByOperationalColumn } from "../utils";
 import { LeadColumn } from "./LeadColumn";
 import { LeadCard } from "./LeadCard";
-import type { LeadBoardCard, LeadBoardColumn, LeadStageValue } from "../types";
+import type { LeadBoardCard, LeadBoardColumn } from "../types";
+import type { LeadOperationalColumn } from "../operational-state";
 
 export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
-  const [columns, setColumns] = useState<LeadBoardColumn[]>(() => groupLeadsByStage(leads));
+  const [columns, setColumns] = useState<LeadBoardColumn[]>(() =>
+    groupLeadsByOperationalColumn(leads),
+  );
   const [activeCard, setActiveCard] = useState<LeadBoardCard | null>(null);
 
   // Re-sincroniza com os dados reais quando a query muda (refetch/cache).
   useEffect(() => {
-    setColumns(groupLeadsByStage(leads));
+    setColumns(groupLeadsByOperationalColumn(leads));
   }, [leads]);
 
   // distance:6 => um clique simples (sem arrasto) nao inicia drag, preservando
@@ -47,22 +50,26 @@ export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
     if (!over) return;
 
     const cardId = String(active.id);
-    const targetStage = String(over.id) as LeadStageValue;
+    const targetStage = String(over.id) as LeadOperationalColumn;
 
     setColumns((prev) => {
-      let moved: LeadBoardCard | undefined;
-      const without = prev.map((col) => {
-        const hit = col.cards.find((c) => c.id === cardId);
-        if (hit) moved = hit;
-        return hit ? { ...col, cards: col.cards.filter((c) => c.id !== cardId) } : col;
-      });
-      if (!moved || moved.current_stage === targetStage) return prev;
+      const sourceCol = prev.find((col) => col.cards.some((c) => c.id === cardId));
+      if (!sourceCol || sourceCol.stage === targetStage) return prev;
+      const moved = sourceCol.cards.find((c) => c.id === cardId);
+      if (!moved) return prev;
 
-      // Movimento apenas visual: ajusta current_stage no estado LOCAL.
-      const movedCard: LeadBoardCard = { ...moved, current_stage: targetStage };
-      return without.map((col) =>
-        col.stage === targetStage ? { ...col, cards: [movedCard, ...col.cards] } : col,
-      );
+      // Movimento APENAS visual: move o cartao entre as colunas do estado
+      // local, SEM escrever `current_stage` (nem local, nem no banco). Um
+      // refetch realinha pela projecao operacional.
+      return prev.map((col) => {
+        if (col.stage === sourceCol.stage) {
+          return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+        }
+        if (col.stage === targetStage) {
+          return { ...col, cards: [moved, ...col.cards] };
+        }
+        return col;
+      });
     });
   }
 
