@@ -16,9 +16,15 @@ implementacao: não autorizada
 
 ## 1. Resumo executivo
 A 3S possui hoje **dois** sistemas relevantes para a operação de leads de clínicas:
-- O **Hub 3S** (`Helder-Evous/hub-3s-care`), com o módulo **Controle de Lead** já
-  implementado (schema `crm`, RLS estrita, derivação de estágio, board, novo lead,
-  detalhe, atividades, marcar perdido).
+- O **Hub 3S** (`Helder-Evous/hub-3s-care`), cujo módulo **Controle de Lead** está
+  **implementado e validado na branch `feat/crm-controle-lead`** (Draft **PR #7**,
+  ainda **aberto e não mesclado**). As estruturas do schema `crm` já existem nos
+  ambientes (DEV/Principal), porém o **frontend e as migrations ainda NÃO fazem parte
+  da `main`** — a integração futura depende da **revisão/resolução do PR #7**.
+
+> **Estados (para evitar ambiguidade):** implementação **concluída na branch**;
+> validação técnica **realizada**; integração na **`main` pendente**; publicação
+> oficial **pendente**.
 - O **Sistema de Gestão de Leads do Jefferson** (`sistema-leads-3s`), uma SPA
   HTML/JS standalone sobre Supabase, em uso para captação/agendamento das clínicas
   OralDents/IEB.
@@ -72,8 +78,19 @@ usado na Operação — sem duplicar cliente, clínica, unidade ou contato.
   os metadados da integração determinam produto e campanha de forma **determinística**.
 - **CRM/Reativação:** a clínica fornece base; a 3S dispara/reativa e conduz ao
   agendamento (origem = importação/disparo).
-- Hoje o Hub **não** tem entidades de `products`/`campaigns` no schema `crm`
-  (decisão futura). O sistema do Jefferson tem `campanhas` (catálogo simples).
+- O **ambiente principal já possui** `public.clinic_products`, `public.contracts` e
+  `public.sales` — representando, em análise, **venda, contrato e produto ativo** da
+  clínica. **Não** propor recriar `clinic_products` (nem equivalente) no `crm`.
+- **Cadastro mestre e relação comercial (análise pendente):** avaliar o reaproveitamento
+  de `public.sales` / `public.contracts` / `public.clinic_products`.
+- **Operação de leads (análise pendente):** avaliar entidades específicas para
+  **campanhas operacionais**, **vínculo do lead com o produto**, **anúncios/formulários**,
+  **playbooks** e **metas/indicadores de campanha**. Uma entidade `campaigns` ainda pode
+  ser necessária, mas deve **relacionar-se ao produto contratado já existente, sem
+  duplicar o cadastro comercial**.
+- **Antes de qualquer nova tabela:** exigir **auditoria** das colunas, relacionamentos
+  e usos atuais de `public.sales` / `public.contracts` / `public.clinic_products`.
+- O sistema do Jefferson tem `campanhas` (catálogo simples).
 
 ## 6. Inventário do sistema de Jefferson (`sistema-leads-3s`)
 **Fonte analisada:** repositório git **bare** `C:\Users\jhefi\sistema-leads-3s.git`,
@@ -129,7 +146,7 @@ parseados aqui — formato .docx; títulos indicam fundação/kanban/telas/dashb
 | **Shell visual / menu** (`AppShell`: Clientes, Operações, Gestão) | conectado |
 | **Autenticação** (Supabase Auth + `crm.user_profiles`, hook `use-auth`) | conectado/persistente |
 | **Cadastro mestre de Clientes** / **Nova Contratação** / **Onboarding** | conectado (B2B; ver 04/10 da KB) — profundidade a auditar |
-| **Controle de Lead** (schema `crm`): board, novo lead, detalhe, atividades, **marcar perdido** | **conectado + persistente + validado** (RLS provada) |
+| **Controle de Lead** (schema `crm`): board, novo lead, detalhe, atividades, **marcar perdido** | **implementação concluída na branch `feat/crm-controle-lead`; validação técnica realizada** (RLS provada). Integração na `main` **pendente** e publicação oficial **pendente** — Draft PR #7, **não mesclado** |
 | `crm` tabelas: patients, leads, lead_activities, appointments, budgets, lead_stage_history, lead_sources, user_profiles, user_units, module_clinics | persistente |
 | Derivação de `current_stage` (trigger; app nunca escreve) | validado |
 | **system_events / ai_tasks** (tabelas em `public`) | existem, **ainda não emitidos** pelo módulo (seam) |
@@ -149,7 +166,7 @@ parseados aqui — formato .docx; títulos indicam fundação/kanban/telas/dashb
 | **Campanhas/Produtos** | `campanhas` | inexistente em `crm` | Decisão: criar `products`/`campaigns` (futuro) |
 | **Pessoa** | embutida em `leads` (nome/telefone) | `patients` separado de `leads` | Mapear: dedup por telefone (já existe no Hub) |
 | **Stack/Tela** | SPA HTML/JS | React/TanStack + design system | Reaproveitar **regras/UX**, não o código HTML |
-| **KB numeração** | — | docs 13–18 da branch `feat/crm-controle-lead` colidem com a KB oficial 13–17 do `main` | **Decisão pendente** (renumerar antes do merge da PR #7) |
+| **KB numeração** | — | docs 13–18 da branch `feat/crm-controle-lead` colidem com a KB oficial 13–17 do `main` | **Risco confirmado** — corrigir **dentro da própria PR #7 antes do merge**; **não** renumerar nem alterar a PR #7 nesta tarefa |
 
 ## 9. Modelo de domínio proposto
 ```
@@ -168,8 +185,12 @@ Cliente (B2B, contratante)
   `crm.appointments`, `crm.lead_stage_history`, `crm.user_profiles/user_units/module_clinics`,
   derivação de estágio, dedup por telefone.
 - **Adaptar:** mapeamento unidade→clínica e usuário→`user_profiles`; histórico do Jefferson.
-- **Decisão (novas entidades, futuro, fora desta tarefa):** `products`,
-  `clinic_products` (vínculo), `campaigns`, e desfecho clínico estruturado.
+- **Reuso comercial (avaliar, NÃO recriar):** `public.sales`, `public.contracts`,
+  `public.clinic_products` já existem — podem representar venda, contrato e produto
+  ativo da clínica. **Auditar antes** de qualquer nova tabela.
+- **Operação de leads (decisão futura, fora desta tarefa):** possível `campaigns`
+  **ligada ao produto contratado existente**, vínculo lead↔produto, anúncios/formulários,
+  playbooks e metas/indicadores — **sem duplicar** o cadastro comercial.
 - **Não criar tabelas nesta tarefa.**
 
 ## 10. Revisão dos estágios
@@ -180,7 +201,8 @@ Registros desta tarefa (sem alterar nada):
 - **`pos_venda` deve sair** do fluxo operacional proposto das clínicas.
 - **Origem técnica:** `pos_venda` é valor do enum `crm.lead_stage` (migration 002) e
   rank 6 em `crm.lead_stage_rank`/`fn_recalc_lead_stage` (migration 010). Remover
-  exigiria migration + ajuste da função — **não autorizado agora**.
+  exigiria migration + ajuste da função — **não autorizado agora**. (Essas migrations
+  são do módulo — hoje nos **ambientes** e na branch do PR #7, **não na `main`**.)
 - **Verificar uso:** antes de qualquer remoção, checar se há linhas com
   `current_stage='pos_venda'` (consulta de leitura) — **não executada/decidida aqui**.
 
@@ -200,7 +222,12 @@ Registros desta tarefa (sem alterar nada):
 ## 11. Estratégia de integração (progressiva)
 1. **Preservar** o sistema do Jefferson (tag/branch de segurança — ver §1 abaixo / Fase 1).
 2. Criar **depois** uma branch a partir de `main` para a integração (não agora).
-3. **Importar sem reescrever** inicialmente: portar regras/fluxos para o módulo do Hub.
+3. **Preservar o comportamento e o conhecimento operacional sem copiar o código
+   standalone como código de produção**: mapear regras, fluxos operacionais, KPIs e a
+   lógica de importação; usar as **telas atuais como referência de experiência**; e
+   **reconstruir** a interface, no futuro, como **módulo nativo do Hub (React/TanStack)**
+   reutilizando design system e componentes. **Não inserir** o HTML/JS standalone no
+   Hub, nem temporariamente. (Reconstrução não autorizada agora.)
 4. **Adaptar ao shell/navegação** do Hub (AppShell, design system).
 5. **Mapear auth e tenant/clínica** (Supabase Auth + `user_units`).
 6. **Camada de adaptação** entre modelos (unidade↔clínica, status↔3 eixos, usuário↔perfil).
@@ -211,10 +238,10 @@ Registros desta tarefa (sem alterar nada):
 
 | Categoria | Itens |
 |---|---|
-| **Reaproveitar direto** | regras de negócio, fluxo de Kanban, import `.xlsx`, KPIs, UX de call center |
-| **Precisa de adaptador** | auth (custom→Supabase), unidade→clínica, status→3 eixos, histórico→atividades/transições |
-| **Refatorar depois** | reescrever a SPA HTML como módulo React/TanStack do Hub |
-| **Não importar** | RLS `acesso_total`; tabela `usuarios` com `senha_hash`; o `index.html` como código de produção |
+| **Reaproveitar (conhecimento)** | regras de negócio, fluxos operacionais, KPIs, lógica de importação `.xlsx`, e as **telas atuais como referência de UX** — **sem copiar o código** |
+| **Precisa de adaptador** | auth (própria→Supabase Auth), unidade→clínica, status→3 eixos, histórico→atividades/transições |
+| **Reconstruir nativo** | interface **futura** como **módulo nativo do Hub (React/TanStack)**, reutilizando design system/componentes (não autorizado agora) |
+| **Não trazer** | RLS `acesso_total`; login `usuarios.senha_hash`; sessão em localStorage; o `index.html`/SPA como código de produção (**nem temporariamente**) |
 | **Riscos de conflito** | numeração de KB (13–18 vs oficial); duplicação de cliente/clínica; perda de histórico na migração |
 | **Dependências** | Supabase Auth, design system do Hub, `clinics`/`user_units`, products/campaigns (futuro) |
 | **Rollback** | manter o sistema do Jefferson intacto e operante até validação; promoção só DEV→Principal; nenhuma remoção até confirmação |
@@ -225,6 +252,13 @@ Registros desta tarefa (sem alterar nada):
 - **Não** consultar dados pessoais/de pacientes.
 - Promoção ao **Principal** (`nndvcsdevbxpgsccyimm`) somente após validação e
   autorização explícita.
+
+**Autorização:** durante a fase atual, **uma autorização explícita neste chat por
+Helder ou Jefferson é suficiente** — **não** é necessária uma segunda autorização
+separada, salvo quando o próprio usuário declarar que a decisão exige aprovação
+conjunta. A **proteção técnica do CRM permanece obrigatória** (sem `service_role`,
+sem escrever campos derivados, RLS estrita), mas **não** se exige duas identidades ou
+duas confirmações para prosseguir.
 
 ## 13. Arquitetura AI-first
 **Eventos de domínio (registrar, não criar):** `lead_received, contact_attempted,
@@ -287,7 +321,10 @@ recolhível; visão compacta para telas menores; destaque de "próxima ação"/S
 - **Status único** → risco de perder semântica ao quebrar em 3 eixos (mapear com cuidado).
 - **Duplicação** de cliente/clínica/unidade/contato entre Comercial e Operação.
 - **Repo bare/arquivado** pode estar desatualizado vs cópia ativa do Jefferson.
-- **Numeração de KB** (13–18 da PR #7 × oficial 13–17 do `main`).
+- **Numeração de KB (risco confirmado):** os documentos **13–18 da PR #7** têm
+  prefixos que **colidem** com documentos já existentes na KB oficial. Deve ser
+  corrigido **dentro da própria PR #7 antes do merge**; **não** renumerar nesta tarefa
+  e **não** alterar a PR #7 nesta execução.
 - **Dados de produção/pacientes** (LGPD) — só leitura, sem PII nesta fase.
 - **Reescrita acidental** ("copiar e colar" ou "reescrever tudo") — evitar ambos.
 
@@ -297,7 +334,8 @@ recolhível; visão compacta para telas menores; destaque de "próxima ação"/S
 2. Esclarecer o **`localhost:3000`** (hoje é o `3s-premiacao`) — onde roda a versão
    ativa do leads?
 3. **Lista final de estágios** (3 eixos) e remoção de `pos_venda`.
-4. Criar (futuro) **`products`/`campaigns`** no `crm`? Como modelar produto↔clínica.
+4. **Auditar** `public.sales`/`contracts`/`clinic_products` e decidir **reuso** vs novas
+   entidades de operação (`campaigns` ligada ao produto, sem duplicar o comercial).
 5. **Mapa de papéis** Jefferson (`admin/operador`) → Hub (`crc/gestor_unidade/...`).
 6. Estratégia de **migração de dados** (leads/histórico) e de-para de unidades→clínicas.
 7. **Numeração da KB** (renumerar os docs do Controle de Lead da PR #7).
@@ -315,8 +353,15 @@ recolhível; visão compacta para telas menores; destaque de "próxima ação"/S
 - **F8 — Promoção ao Principal** após validação.
 
 ## 18. Critérios de aceite
-- Nenhuma perda de telas, regras, dados, dashboards, auth, permissões, histórico ou
-  lógica de call center do sistema do Jefferson.
+- Nenhuma perda de telas, regras, dados, dashboards, histórico ou lógica de call
+  center do sistema do Jefferson.
+- **Autenticação/permissões — preservar o que importa, não o mecanismo.**
+  **Preservar:** usuários relevantes, papéis operacionais, vínculos com unidades e
+  clínicas, responsabilidades, histórico de autoria e necessidades reais de acesso.
+  **Não preservar:** login por `usuarios.senha_hash`, sessão própria em localStorage,
+  RLS `acesso_total`, acesso sem escopo por clínica ou perfil. A implementação futura
+  **migra** usuários e papéis para **Supabase Auth + `crm.user_profiles` +
+  `crm.user_units` + RLS estrita do Hub**.
 - Cliente/clínica/unidade/contato **únicos** entre Comercial e Operação.
 - Estágio **derivado** de eventos; app nunca escreve `current_stage`.
 - RLS estrita por clínica/perfil; sem `acesso_total`.
