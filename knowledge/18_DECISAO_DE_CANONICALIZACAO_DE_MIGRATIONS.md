@@ -14,10 +14,11 @@ implementacao: não autorizada
 > migration repair, alteração de banco, schema, dados, RLS, grants, autenticação,
 > Edge Function, código ou integração está autorizada por este documento.**
 
-> **Proposta — aguardando aprovação de Helder e Jefferson.**
-> A recomendação técnica aqui formulada só pode ser implementada após autorização
-> explícita de Helder ou Jefferson, e o tratamento dos arquivos CRM depende também
-> de aprovação específica de Jefferson.
+> **Direção arquitetural aprovada. Execução não autorizada.**
+> A Alternativa 1 foi aprovada como direção para o planejamento da canonicalização.
+> Nenhum gate, alteração em migrations, `migration repair`, DDL ou ação em ambiente está
+> autorizado por esta decisão. Ações que envolvam os arquivos ou estruturas do schema
+> `crm` permanecem sujeitas à aprovação específica exigida pela governança registrada.
 
 ---
 
