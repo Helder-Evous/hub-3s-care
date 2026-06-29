@@ -1,10 +1,10 @@
 ---
 documento: 18_DECISAO_DE_CANONICALIZACAO_DE_MIGRATIONS
-versao: 0.1-draft
-data: 2026-06-25
+versao: 1.0
+data: 2026-06-29
 classificacao: L1 — Operacional/Técnico
 proprietario: Helder e Jefferson
-status: Proposta de decisão — aguardando aprovação
+status: Decisão arquitetural aprovada — planejamento de execução
 implementacao: não autorizada
 ---
 
@@ -18,6 +18,46 @@ implementacao: não autorizada
 > A recomendação técnica aqui formulada só pode ser implementada após autorização
 > explícita de Helder ou Jefferson, e o tratamento dos arquivos CRM depende também
 > de aprovação específica de Jefferson.
+
+---
+
+## 0. Decisão aprovada (atualização — 2026-06-29)
+
+> **Alternativa 1 APROVADA como direção arquitetural.** Implementação **não autorizada** —
+> esta atualização é exclusivamente documental e de planejamento. A análise original
+> (seções 1–23) é **preservada** integralmente abaixo.
+
+Registro explícito da decisão:
+- **Alternativa 1 aprovada como direção** — o **Principal** é a **referência canônica**
+  dos nomes, versões, ordem e statements das migrations já registradas.
+- **O Principal não sofrerá reaplicação de DDL** durante a canonicalização.
+- **Schema `crm` protegido:** nenhuma estrutura será removida, recriada ou reaplicada.
+- **Históricos divergentes/superseded preservados** em área documental
+  (`knowledge/migration-history/` + arquivamento das versões substituídas).
+- **DEV:** sujeito **apenas a futura reconciliação de metadados** (`migration repair`),
+  **sem reaplicar DDL existente**, e **somente após nova autorização**.
+- **Estruturas comprovadamente ausentes no DEV** serão tratadas **separadamente**,
+  após auditoria e autorização específica.
+- **Toda execução futura** começa por **inventário → comparação → dry-run**.
+  **Nenhuma operação em banco** está autorizada por esta decisão.
+- O **documento de plano de execução** passa a ser
+  **`knowledge/20_PLANO_DE_EXECUCAO_DA_CANONICALIZACAO.md`** — o número **19** já pertence
+  a `knowledge/19_INTEGRACAO_DO_CRM_OPERACIONAL_AO_HUB.md`.
+
+### Decisões — atualização
+**Considerado decidido:**
+- **H1** — Alternativa 1 aprovada como direção.
+- **H6** — autorizada **apenas** a criação documental do plano de execução, agora como
+  **documento 20**. (Gate 0 e qualquer execução seguem **não autorizados**.)
+
+**Mantido como pendente** (sem evidência suficiente / requer nova autorização):
+- local definitivo dos históricos superseded;
+- origem dos hashes ou versões divergentes;
+- conflitos entre migrations públicas;
+- aprovação de qualquer `migration repair`;
+- alteração de arquivos em `supabase/migrations`;
+- execução em DEV;
+- qualquer ação no Principal.
 
 ---
 
@@ -392,7 +432,7 @@ o trabalho concluído de Jefferson.
 
 ## 8. Recomendação proposta
 
-> **Proposta — aguardando aprovação de Helder e Jefferson.**
+> **APROVADA como direção (2026-06-29) — ver §0.** Texto analítico preservado abaixo.
 >
 > **Adotar o histórico registrado no principal como histórico canônico do diretório
 > ativo, preservar os históricos alternativos em `knowledge/migration-history/`,
@@ -716,7 +756,7 @@ migration de produto após o alinhamento do DEV), ela exige:
 ## 12. Plano de validação local
 
 > `EXEMPLO NÃO AUTORIZADO — NÃO EXECUTAR` — comandos listados apenas para referência
-> do documento de execução (doc 19, ainda não criado).
+> do documento de execução (doc 20).
 
 Verificações conceituais para o Gate 3:
 
@@ -759,7 +799,7 @@ canônico do principal tem timestamps `1535xx..2018xx`):
 > `Decisão pendente — evidência adicional necessária` sobre se o Supabase CLI
 > permite `migration repair --status applied` para substituir um registro existente
 > por outro com timestamp diferente sem apagar e recriar a entrada. O documento
-> de execução (doc 19) deverá cobrir esse ponto com documentação da CLI.
+> de execução (doc 20) deverá cobrir esse ponto com documentação da CLI.
 
 **Rollback do Gate 4:** se qualquer validação falhar após o reparo de metadados,
 o fallback é restaurar o snapshot do `schema_migrations` do DEV capturado no Gate 1.
@@ -931,12 +971,12 @@ e impossibilita a reconstrução de ambiente limpo.
 
 | # | Decisão | Contexto |
 |---|---|---|
-| H1 | Aprovar esta proposta (documento 18) como base para a Etapa B | Aprova a análise e a Alternativa 1 como direção |
+| H1 | Aprovar esta proposta (documento 18) como base para a Etapa B | **DECIDIDO (2026-06-29): Alternativa 1 aprovada como direção** |
 | H2 | Confirmar o local de arquivo das versões superseded | `supabase/migrations_archive/` ou outra localização |
 | H3 | Confirmar ou refutar a hipótese de origem de `716bbe07` | Aplicado via SQL direto ou há outro caminho? |
 | H4 | Confirmar ou refutar a hipótese de origem de `aab13a75` | Idem |
 | H5 | Confirmar se o conteúdo de `dev_scaffold_public_clinics` conflita com P01 | Ler os dois `.sql.txt` preservados e decidir a estratégia para o Gate 5 |
-| H6 | Autorizar o início do Gate 0 e a criação do documento 19 (plano de execução) | Somente após H1..H5 respondidos |
+| H6 | Autorizar o início do Gate 0 e a criação do documento de plano de execução | **DECIDIDO (2026-06-29): autorizada apenas a criação documental do plano, agora como documento 20. Gate 0 e execução seguem NÃO autorizados** |
 
 ### Decisões de Jefferson
 
@@ -967,10 +1007,10 @@ Este documento não autoriza:
 
 ## 23. Próximo documento após aprovação
 
-Somente após aprovação explícita de Helder (decisões H1..H6) e Jefferson (J1..J4),
-deverá ser criado um documento separado de execução:
+Com a Alternativa 1 aprovada (H1) e autorizada a criação documental do plano (H6),
+o documento separado de execução foi criado como (o número 19 já está ocupado):
 
-`knowledge/19_PLANO_DE_EXECUCAO_DA_CANONICALIZACAO.md`
+`knowledge/20_PLANO_DE_EXECUCAO_DA_CANONICALIZACAO.md`
 
 Esse documento cobrirá:
 - Lista exata de arquivos a criar, arquivar e remover (com hashes esperados)
@@ -981,4 +1021,5 @@ Esse documento cobrirá:
 - Responsáveis por cada gate
 - Comunicações necessárias antes de tocar o principal
 
-**O documento 19 não deve ser criado antes da aprovação desta proposta.**
+**O documento de plano é o 20** (criado nesta tarefa; status: *aguardando autorização de
+execução*). Nenhum gate está autorizado.
