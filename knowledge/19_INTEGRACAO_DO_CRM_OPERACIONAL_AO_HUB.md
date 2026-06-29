@@ -1,10 +1,10 @@
 ---
 documento: 19_INTEGRACAO_DO_CRM_OPERACIONAL_AO_HUB
-versao: 0.1-draft
-data: 2026-06-26
+versao: 1.0
+data: 2026-06-29
 classificacao: L1 — Operacional/Técnico
 proprietario: Helder e Jefferson
-status: Proposta de integração — aguardando revisão
+status: Direção arquitetural aprovada — planejamento de implementação
 implementacao: não autorizada
 ---
 
@@ -374,3 +374,172 @@ Sem implementação de código, banco, migrations, RLS, autenticação, frontend
 ou integrações. Sem criar eventos/triggers/tabelas/agentes. Sem remover `pos_venda`.
 Sem migração de dados. Sem merge. Sem alterar o sistema do Jefferson. Apenas leitura
 e este documento.
+
+---
+
+# PARTE II — Planejamento de implementação (v1.0)
+
+> Esta Parte II detalha a **direção aprovada** (Comercial B2B, Central de Leads B2C e
+> Portal do Cliente) em escopo funcional, navegação, acesso e plano por incrementos.
+> **Não substitui** as seções 1–19 (histórico/inventário/decisões), apenas as expande.
+> **Implementação não autorizada.**
+
+## 20. Estado real da PR #7 (Fase 1)
+> PR #7 = branch `feat/crm-controle-lead` (Draft, **não mesclada na `main`**). É a
+> **fundação** do Controle de Lead B2C — **não** o módulo operacional completo.
+
+| Item | Classificação |
+|---|---|
+| Board `/crm/controle-lead` (colunas por estágio, contador, scroll) | **implementado + validado** (técnico) |
+| Novo Lead (dedup por telefone) | **implementado + validado** |
+| Detalhe do lead (1 query agregada, embeds) | **implementado + validado** |
+| Registrar atividade (`lead_activities`) | **implementado + validado** |
+| Marcar perdido (`lost_at`, S2-1) | **implementado + validado** |
+| Drag & drop do board | **mock** (apenas visual; **não persiste** — ver ADR-0001) |
+| **Criar/editar agendamento** | **ausente** (detalhe só **lê**; S2-2 só tem Entendimento) |
+| **Criar/editar orçamento** | **ausente** (só leitura) |
+| Tabelas `crm` (10), enums (8) | **implementado** |
+| Funções/triggers (derivação `current_stage`, normalização, touch) | **implementado + validado** |
+| Policies RLS (isolamento por clínica) | **implementado + validado** (por simulação) |
+| Dados derivados (`current_stage`, `last_contact_at`, `last_activity_at`) | **implementado** (app nunca escreve) |
+| `system_events` / `ai_tasks` (emissão) | **ausente** (apenas seam) |
+| Campanhas, produtos, importação, dashboard, Portal, Kanban Comercial | **ausente** |
+| `pos_venda` (enum + rank na derivação) | **precisa ser revisado/removido** do fluxo operacional |
+| Publicação | tudo na **branch** (Draft PR #7); **não na `main`** |
+
+## 21. Escopo funcional completo (estado-alvo)
+- **Comercial 3S (B2B):** captação e conversão de clínicas/empresas em clientes da 3S
+  (`lead → qualificação → reunião → proposta → contrato → onboarding → cliente ativo`),
+  integrado à jornada do cliente (onboarding → ativação de produtos → operação → renovação).
+- **Central de Leads (B2C):** operação de call center dos pacientes em nome das clínicas —
+  gerar agendamentos, aumentar confirmações, reduzir faltas, maximizar comparecimentos,
+  registrar resultados.
+- **Portal do Cliente:** **mesmo Hub**, visão restrita à(s) clínica(s) e produtos contratados
+  do cliente (indicadores consolidados; sem dados internos). **Sem** sistema/banco separado.
+
+## 22. Lacunas atuais (o que falta)
+Importação `.xlsx`; campanhas e produtos no domínio; **criação** de agendamentos/orçamentos
+pela UI; dashboard interno (operacional/executivo); Portal do Cliente; **Kanban Comercial B2B**
+(hoje só há cadastro/contratação/onboarding); separação de navegação B2B × B2C × Portal;
+emissão de **eventos** (`system_events`) e **tarefas de IA**; remoção de `pos_venda` do fluxo
+operacional; geração dos **types oficiais** `public,crm` (remover `crm-types.ts`).
+
+## 23. Navegação futura (proposta)
+```
+Comercial 3S
+├── Leads comerciais
+├── Reuniões
+├── Propostas
+├── Contratos
+└── Jornada do cliente
+
+Operações
+└── Central de Leads
+    ├── Minha Fila
+    ├── Kanban
+    ├── Importar Leads
+    ├── Campanhas
+    ├── Agendamentos
+    ├── Comparecimentos
+    ├── Resultados
+    └── Dashboard Interno
+
+Portal do Cliente
+├── Visão Geral
+├── Campanhas
+├── Agendamentos
+├── Comparecimentos
+└── Resultados
+```
+**Regra:** nunca misturar leads B2B (clínicas) com pacientes B2C no mesmo funil/entidade/indicador.
+
+## 24. Hierarquia de acesso (proposta de visibilidade — sem alterar RLS)
+| Papel | Visibilidade proposta |
+|---|---|
+| `super_admin_3s` | configuração completa; gestão de acessos; todas as clínicas; todos os módulos |
+| `gestor_3s` | visão consolidada; todas as clínicas; dashboards internos; campanhas/resultados; supervisão de operadores |
+| `gestor_unidade` | apenas clínicas/unidades vinculadas; operação; campanhas; agendamentos; resultados; equipe autorizada |
+| `crc` | fila e leads autorizados; atividades; agendamentos; comparecimentos; próxima ação; **sem** gestão administrativa |
+| `cliente` | apenas suas clínicas; produtos contratados; indicadores permitidos; agendamentos; comparecimentos; resultados |
+
+**Portal/cliente:** indicadores **consolidados por padrão**; nomes/contatos/leads individuais
+**só com autorização específica**; **nunca** notas internas, avaliação de operadores, configurações
+ou dados de outras clínicas. *(RLS atual já isola por clínica; a granularidade do cliente é decisão futura — ver §31.)*
+
+## 25. Importação de leads (Fase 4)
+**Comportamento atual do `sistema-leads-3s` (a confirmar no código-fonte):** importação `.xlsx`
+(SheetJS), tela "Importar", campos típicos `nome, telefone, origem, campanha, unidade, data`,
+status inicial `Agendado`. Detalhes de **validação/duplicidade/erros/rollback/autoria** precisam
+de **auditoria do código** do Jefferson (não documentados).
+
+**Tela futura no Hub (fluxo proposto):** (1) selecionar clínica → (2) produto → (3) selecionar/criar
+campanha → (4) enviar arquivo → (5) mapear colunas → (6) prévia → (7) validar erros → (8) identificar
+duplicados (dedup por telefone normalizado, regra já existente) → (9) confirmar → (10) relatório.
+
+**Eventos futuros (registrar, não criar):** `lead_import_started`, `lead_import_validated`,
+`lead_import_completed`, `lead_import_failed`, `lead_duplicate_detected`.
+
+## 26. Central de Leads — escopo operacional (Fase 5)
+Minha Fila · Kanban · lista · detalhe · atividades · conversas · próxima ação · prioridade · SLA ·
+agendamentos · confirmação · reagendamento · falta · comparecimento · resultado · motivo de perda.
+
+**Reuso da PR #7:** `patients`, `leads`, `lead_activities`, `appointments`, `budgets`,
+`lead_stage_history`, board, detalhe, dedup, derivação de estágio, marcar perdido. **Faltam:**
+Minha Fila, conversas, SLA/prioridade/próxima ação, **criação** de agendamento/orçamento, importação.
+
+**Três eixos (não misturar):** (a) **estágio do lead** (call center); (b) **status do agendamento**
+(`appointments.status`); (c) **resultado clínico/comercial**. **`pos_venda` não é etapa operacional.**
+
+## 27. Dashboard interno (Fase 6)
+**Operacional (CRC/gestor_unidade):** leads recebidos/trabalhados, tentativas de contato, respostas,
+interessados, agendamentos, confirmações, comparecimentos, faltas, cancelamentos, reagendamentos,
+taxas (contato/agendamento/confirmação/comparecimento), produtividade por operador, SLA, próxima ação.
+**Executivo (gestor_3s/super_admin):** os mesmos consolidados por **clínica, produto, campanha,
+origem e período**; comparativos e tendências. **Sem** duplicar cálculo no frontend (views no `crm`,
+invoker rights, respeitando RLS).
+
+## 28. Portal do Cliente (Fase 7)
+**Experiência:** visão geral, campanhas, agendamentos, comparecimentos, faltas, resultados, evolução
+por período, indicadores por produto.
+**Segurança:** dados **consolidados por padrão**; individuais só se **explicitamente autorizados**;
+**nunca** notas internas, dados de outras clínicas, dados administrativos da 3S, avaliação de
+operadores, nem raciocínio/instruções internas da IA. Mesmo Hub/banco (sem sistema separado).
+
+## 29. Kanban Comercial B2B (Fase 8)
+**Já existe (avaliar reuso):** cadastro mestre de **clientes**, **Nova Contratação**, **Onboarding**,
+e `public.sales` / `public.contracts` / `public.clinic_products` (venda/contrato/produto ativo).
+**Falta para o Kanban Comercial:** entrada de **leads comerciais**, origem, qualificação, reuniões,
+propostas, negociação, **ganho/perdido**, e a ligação contrato → onboarding → ativação de produto.
+**Regra:** **não** usar tabelas/estágios B2C (`crm.leads`, `lead_stage`) no Comercial B2B — domínio próprio.
+
+## 30. Arquitetura AI-first por Kanban (Fase 9)
+Ordem de decisão em todos os Kanbans/filas: **regras determinísticas → metadados → IA → revisão
+humana em exceções**. Itens a cobrir: classificação, etiquetagem, roteamento, prioridade, SLA,
+próxima ação, criação de tarefas, **movimentação por eventos** (não silenciosa), alertas, exceções,
+correção/desfazer. Arquitetura: `system_events → ai_tasks → knowledge_base → IA Supervisor →
+agentes/integrações`. **Nada implementado** — requisitos apenas.
+
+## 31. Plano de implementação por incrementos (Fase 10)
+> Cada incremento segue o processo gate-a-gate (Entendimento → implementação → build/typecheck/
+> testes → relatório → commit/push só sob autorização).
+
+| Inc. | Foco | Problema resolvido | Módulos | Entidades | Eventos (futuros) | IA (futura) | Indicadores | Riscos | Dependências | Critérios de aceite | Aprovação humana |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| **1** | Fundação + separação de navegação B2B/B2C/Portal | Mistura de domínios | Shell/AppShell, rotas | — (só navegação) | — | — | — | rotas/links quebrados; confusão de menus | PR #7 mesclável; design system | menus separados; nenhuma rota B2B↔B2C cruzada | Helder/Jefferson |
+| **2** | Hierarquia visual + autorização por papel | Acesso indevido na UI | Shell, guards por papel | `user_profiles`/`user_units`/`module_clinics` | — | — | — | esconder na UI ≠ proteger (RLS já protege) | Inc.1; RLS existente | cada papel vê só o permitido; sem regressão de RLS | Helder/Jefferson |
+| **3** | Campanhas e importação | Sem origem estruturada/entrada em massa | Central de Leads | `campaigns`(nova?), `clinic_products`/`contracts`/`sales` (auditar), `patients`/`leads` | `lead_import_*`, `lead_duplicate_detected` | classificação de origem por metadados | leads por campanha/origem | dedup, formula injection, import parcial | **auditoria** das 3 tabelas públicas; dedup existente | importar com dclínica/produto/campanha; relatório; sem duplicar | Helder/Jefferson (modelo de dados) |
+| **4** | Kanban operacional + agendamentos completos | Funil não avança pela UI | Central de Leads | `appointments`, `budgets`, `leads`, `lead_stage_history` | `appointment_*`, `patient_attended/no_show`, `lead_*` | próxima ação, priorização | taxas de agendamento/comparecimento | escrever `current_stage`; estados inválidos; duplicidade | Inc.3; derivação existente | criar/confirmar/comparecer/reagendar/perder; estágio derivado | Helder/Jefferson |
+| **5** | Dashboard interno | Falta visão de gestão | Central de Leads | views `crm` | consome eventos/estado | detecção de exceções | KPIs §27 | performance de views; cálculo duplicado | Inc.4 | operacional + executivo; sem cálculo no front | Helder/Jefferson |
+| **6** | Portal do Cliente | Cliente sem visão própria | Portal | views consolidadas; RLS por cliente | — | — | indicadores por produto | vazamento entre clínicas; PII | Inc.5; decisão de granularidade | cliente vê só o seu, consolidado; zero dado interno | **obrigatória** (privacidade/LGPD) |
+| **7** | Eventos, tarefas e automações de IA | Operação não-AI-first | system_events/ai_tasks | `system_events`, `ai_tasks` | todos os acima | classificação/roteamento/movimentação | volume/eficácia de tarefas | loop/duplicação; baixa confiança movendo cartão | Inc.4–6; grants p/ INSERT em public.* | rastreabilidade total; sem mover silencioso; desfazer | **obrigatória** (decisões automáticas) |
+| **8** | Auditoria de segurança/RLS/isolamento | Risco antes do Principal | todos | todas | — | — | — | acesso entre clínicas; RLS permissiva | Inc.1–7 no DEV | bloqueadores zerados (ver §15) | **obrigatória** (go/no-go p/ Principal) |
+
+## 32. Decisões pendentes (consolidado)
+1. Cópia **canônica/ativa** do `sistema-leads-3s` (o repo local é bare/arquivo).
+2. **Lista final de estágios** (3 eixos) + remoção de `pos_venda`.
+3. **Auditar** `public.sales`/`contracts`/`clinic_products` e decidir reuso × novas entidades de operação
+   (`campaigns` ligada ao produto, sem duplicar comercial).
+4. **Granularidade do Portal do Cliente** (consolidado vs individual; quando liberar PII).
+5. Mapa de papéis Jefferson (`admin/operador`) → papéis do Hub.
+6. Migração de dados (leads/histórico; unidades→clínicas) e **PR #7** (numeração da KB; merge).
+7. Domínio do **Comercial B2B** (entidades próprias do Kanban) e quando integrá-lo.
