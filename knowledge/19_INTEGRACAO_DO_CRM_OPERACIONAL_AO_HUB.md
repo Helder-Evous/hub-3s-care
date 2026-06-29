@@ -163,7 +163,7 @@ parseados aqui — formato .docx; títulos indicam fundação/kanban/telas/dashb
 | **Unidade vs Clínica** | `unidades` (lista simples) | `public.clinics` + `user_units` | Mapear unidade→clínica; sem duplicar |
 | **Estágio** | `status` único (misto) | `current_stage` **derivado** + `appointments.status` + desfecho | Separar 3 eixos (ver §10); nunca escrever `current_stage` |
 | **Histórico** | `historico_status` | `lead_stage_history` + `lead_activities` | Mapear; histórico do Jefferson vira atividades/transições |
-| **Campanhas/Produtos** | `campanhas` | inexistente em `crm` | Decisão: criar `products`/`campaigns` (futuro) |
+| **Campanhas/Produtos** | `campanhas` | `public.sales`/`contracts`/`clinic_products` já existem | Auditar `public.sales`, `public.contracts` e `public.clinic_products`; avaliar somente `campaigns` e vínculos operacionais necessários, sem duplicar o cadastro comercial. |
 | **Pessoa** | embutida em `leads` (nome/telefone) | `patients` separado de `leads` | Mapear: dedup por telefone (já existe no Hub) |
 | **Stack/Tela** | SPA HTML/JS | React/TanStack + design system | Reaproveitar **regras/UX**, não o código HTML |
 | **KB numeração** | — | docs 13–18 da branch `feat/crm-controle-lead` colidem com a KB oficial 13–17 do `main` | **Risco confirmado** — corrigir **dentro da própria PR #7 antes do merge**; **não** renumerar nem alterar a PR #7 nesta tarefa |
@@ -345,7 +345,8 @@ recolhível; visão compacta para telas menores; destaque de "próxima ação"/S
 - **F0 — Blueprint** (este documento) e validação por Helder/Jefferson.
 - **F1 — Preservação** (tag/branch de segurança do sistema do Jefferson; inventário).
 - **F2 — Camada de adaptação** (auth, unidade↔clínica, status↔3 eixos) no DEV.
-- **F3 — Importação do módulo** ao shell do Hub (sem reescrever) + filtros por produto.
+- **F3 — Reconstrução progressiva do módulo no shell do Hub**, preservando
+  comportamentos, regras e UX de referência, sem copiar o código standalone + filtros por produto.
 - **F4 — Migração de regras** (estágio derivado, RLS estrita, histórico→atividades).
 - **F5 — Eventos** (`system_events`) e rastreabilidade.
 - **F6 — AI-first** (classificação/roteamento/movimentação assistida; `ai_tasks`).
