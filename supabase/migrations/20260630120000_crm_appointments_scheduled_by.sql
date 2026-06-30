@@ -6,7 +6,9 @@
 --            indice e protecao write-once (authenticated INSERE, nao ATUALIZA).
 -- Depende  : 003 (crm.user_profiles), 008 (crm.appointments).
 -- Escopo   : ADITIVA. Coluna NULLABLE (compativel com linhas existentes; SEM
---            backfill). SEM alteracao de RLS/triggers/enums, SEM S2-2B, SEM
+--            backfill). Substitui (idempotente) a policy de INSERT de
+--            `authenticated` para exigir scheduled_by = auth.uid() (ou NULL,
+--            transitorio). SEM alteracao de triggers/enums, SEM S2-2B, SEM
 --            importacoes, SEM frontend.
 -- Decisao  : ADR-0004 / ADR-0005 / doc 23. Aprovacao de Jheferson; aplicar no
 --            DEV (xcqfdnymadeqeuacqotu) e validar ANTES do Principal
@@ -78,4 +80,26 @@ grant update (
   updated_at
 ) on crm.appointments to authenticated;
 -- (scheduled_by deliberadamente FORA da lista acima = imutavel para authenticated)
+
+-- ----------------------------------------------------------------------------
+-- 5) RLS de INSERT — authenticated so cria com scheduled_by = auth.uid()
+--    Substitui a policy `appointments_insert_manage` (criada na 008) de forma
+--    IDEMPOTENTE, PRESERVANDO user_can_manage_module(clinic_id) e
+--    module_enabled_for_clinic(clinic_id), e ADICIONANDO a regra de que o CRC nao
+--    pode atribuir o agendamento a OUTRO usuario.
+--    NULL ainda e aceito de forma TRANSITORIA (o frontend atual nao envia
+--    scheduled_by); apertar para `scheduled_by = auth.uid()` (sem NULL) ou tornar
+--    a coluna NOT NULL apos a Fase 2 (frontend grava auth.uid()) + decisao de backfill.
+--    service_role NAO passa por RLS -> importacoes/admin podem atribuir outro CRC
+--    (caminho confiavel server-side).
+-- ----------------------------------------------------------------------------
+drop policy if exists appointments_insert_manage on crm.appointments;
+create policy appointments_insert_manage
+  on crm.appointments
+  for insert to authenticated
+  with check (
+    crm.user_can_manage_module(clinic_id)
+    and crm.module_enabled_for_clinic(clinic_id)
+    and (scheduled_by = auth.uid() or scheduled_by is null)
+  );
 -- ============================================================================
