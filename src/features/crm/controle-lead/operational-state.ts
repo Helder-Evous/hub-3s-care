@@ -11,13 +11,16 @@
 // integracoes, IA supervisionada) sem alterar a assinatura publica.
 import type { LeadStage, AppointmentStatus } from "@/integrations/supabase/crm-types";
 
-/** Colunas operacionais exibidas no board da 3S. */
+/**
+ * Colunas operacionais exibidas no board da 3S (mesa do CRC, ver ADR-0003).
+ * `Efetivou` NÃO é coluna: o comparecimento encerra a operação da 3S; a
+ * efetivação é indicador/resultado posterior, não fila do CRC.
+ */
 export type LeadOperationalColumn =
   | "novo"
   | "agendado"
   | "remarcar"
   | "compareceu"
-  | "efetivado"
   | "perdido";
 
 /** Agendamento ativo no futuro = ainda vai acontecer e nao foi desfeito. */
@@ -59,12 +62,11 @@ const toMs = (iso: string | null): number => (iso ? new Date(iso).getTime() : Na
  *  2. existe agendamento futuro ativo                    -> agendado
  *  3. agenda vencida sem desfecho, ou falta/cancelamento
  *     sem novo futuro ativo                              -> remarcar
- *  -. efetivacao confirmada (lacuna: hoje so via
- *     `current_stage='efetivado'`) — avaliada antes de
- *     "compareceu" para nao ser mascarada por um
- *     comparecimento passado                             -> efetivado
- *  4. compareceu e nao ha proxima acao agendada          -> compareceu
- *  6. nenhuma condicao anterior                          -> novo
+ *  4. lead efetivado (current_stage) ou compareceu sem
+ *     proxima acao agendada                              -> compareceu
+ *  5. nenhuma condicao anterior                          -> novo
+ *
+ * `Efetivou` NAO e coluna (ADR-0003): efetivacao vira indicador, nao fila.
  */
 export function resolveLeadOperationalState(
   lead: OperationalLead,
@@ -92,11 +94,10 @@ export function resolveLeadOperationalState(
   const hasNeedsReschedule = appointments.some((a) => NEEDS_RESCHEDULE.has(a.status));
   if (hasOverduePending || hasNeedsReschedule) return "remarcar";
 
-  // Efetivado (lacuna) — unica fonte confiavel atual e `current_stage`.
-  // Avaliado antes de "compareceu" para que um comparecimento passado nao
-  // mascare uma efetivacao ja confirmada. Sem fonte propria de efetivacao,
-  // permanece dependente do estagio canonico (ver relatorio / Q pendente).
-  if (lead.current_stage === "efetivado") return "efetivado";
+  // Efetivado (ADR-0003) NÃO é coluna. Um lead já efetivado esteve na clínica:
+  // projeta em "Compareceu" (encerramento operacional), nunca some do board.
+  // A efetivação em si vira indicador/badge, fora do Kanban.
+  if (lead.current_stage === "efetivado") return "compareceu";
 
   // P4 — compareceu e nao ha proxima acao agendada.
   const hasAttended = appointments.some((a) => a.status === "compareceu");

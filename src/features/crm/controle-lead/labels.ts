@@ -12,17 +12,16 @@ import type { LeadOperationalColumn } from "./operational-state";
 export type BadgeTone = "success" | "warning" | "critical" | "muted" | "primary";
 
 /**
- * Ordem das colunas OPERACIONAIS do board da 3S (projecao).
- * O CRC nao negocia orcamento nem faz pos-venda; por isso `em_avaliacao`,
- * `orcamento` e `pos_venda` continuam no enum `lead_stage`, mas NAO aparecem
- * como colunas do board. `perdido` e a coluna terminal lateral, ao final.
+ * Ordem das colunas OPERACIONAIS do board da 3S (mesa do CRC, ver ADR-0003).
+ * `Efetivou` NAO e coluna (efetivacao = indicador posterior). `em_avaliacao`,
+ * `orcamento` e `pos_venda` continuam no enum `lead_stage`, mas NAO aparecem no
+ * board. `perdido` e a coluna terminal lateral, ao final.
  */
 export const OPERATIONAL_COLUMN_ORDER: LeadOperationalColumn[] = [
   "novo",
   "agendado",
   "remarcar",
   "compareceu",
-  "efetivado",
   "perdido",
 ];
 
@@ -31,7 +30,6 @@ export const OPERATIONAL_COLUMN_LABELS: Record<LeadOperationalColumn, string> = 
   agendado: "Agendado",
   remarcar: "Remarcar",
   compareceu: "Compareceu",
-  efetivado: "Efetivou",
   perdido: "Perdido",
 };
 
@@ -40,7 +38,6 @@ export const OPERATIONAL_COLUMN_TONE: Record<LeadOperationalColumn, BadgeTone> =
   agendado: "primary",
   remarcar: "warning",
   compareceu: "primary",
-  efetivado: "success",
   perdido: "critical",
 };
 

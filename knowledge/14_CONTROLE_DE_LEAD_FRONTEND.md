@@ -51,12 +51,12 @@ Convenção: **a rota é fina** (estados/composição ficam em `components/`, ex
 - **O board agrupa por estado OPERACIONAL, não por `current_stage`** (S2-0, ver `ADR-0002`).
   A função **`resolveLeadOperationalState(lead, appointments, now)`** (em `operational-state.ts`)
   centraliza a projeção; `groupLeadsByOperationalColumn` monta as colunas.
-- **Colunas operacionais (implementado no PR #9):** `Novo Lead, Agendado, Remarcar, Compareceu,
-  Efetivou, Perdido` (`OPERATIONAL_COLUMN_ORDER`).
-  > ⚠️ **Conflito com `ADR-0003` (2026-06-30):** `Efetivou` **não deve mais ser coluna**. As
-  > colunas oficiais passam a ser `Novo Lead, Agendado, Remarcar, Compareceu, Perdido`. Correção
-  > pendente: remover `efetivado` de `OPERATIONAL_COLUMN_ORDER/LABELS/TONE` e do ramo de
-  > `resolveLeadOperationalState`, realocando leads `efetivado` para **Compareceu** (não podem sumir).
+- **Colunas operacionais (oficiais, ADR-0003):** `Novo Lead, Agendado, Remarcar, Compareceu,
+  Perdido` (`OPERATIONAL_COLUMN_ORDER`).
+  > ✅ **Corrigido (ADR-0003):** `Efetivou` **deixou de ser coluna**. `efetivado` foi removido de
+  > `OPERATIONAL_COLUMN_ORDER/LABELS/TONE` e do tipo `LeadOperationalColumn`; em
+  > `resolveLeadOperationalState`, leads com `current_stage='efetivado'` projetam em **Compareceu**
+  > (não somem do board). Efetivação passa a ser indicador/badge, fora do Kanban.
 - Os estágios `em_avaliacao`/`orcamento`/`pos_venda` **não** aparecem no board (continuam no enum).
 - A query do board carrega **fatos operacionais** (hoje `appointments`); a projeção é **somente
   leitura** e extensível a importações/relatórios/integrações/IA no futuro.

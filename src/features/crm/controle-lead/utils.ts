@@ -5,7 +5,7 @@ import { resolveLeadOperationalState } from "./operational-state";
 
 /**
  * Agrupa os leads pela coluna OPERACIONAL da 3S (projecao), na ordem
- * `novo, agendado, remarcar, compareceu, efetivado, perdido`.
+ * `novo, agendado, remarcar, compareceu, perdido` (Efetivou nao e coluna — ADR-0003).
  *
  * A coluna NAO e `current_stage`: ela e derivada dos fatos do dominio
  * (`lost_at`, `appointments`) por `resolveLeadOperationalState`. Nada e
