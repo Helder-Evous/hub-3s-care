@@ -73,6 +73,18 @@ git pull
 
 ---
 
+## Segurança
+
+- **Nunca remova o `.env`.** Sem ele, o projeto **falha propositalmente** ao iniciar a
+  conexão com o Supabase — isso é uma **proteção arquitetural**, não um bug.
+- **Não há fallback para produção.** O código **não** usa URL/chave fixas nem o ambiente
+  principal como padrão. Sem `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` válidas,
+  ele lança um erro explícito em vez de conectar a produção.
+- **Nunca use produção como ambiente padrão.** O padrão é o **DEV** (`xcqfdnymadeqeuacqotu`).
+  Só aponte para o principal de forma **consciente e explícita** (preenchendo a URL/chave do
+  principal no `.env`), nunca por omissão.
+- **Nunca commite o `.env`** nem exponha a `service_role`. O `.env` é ignorado pelo Git.
+
 ## Solução de problemas
 
 | Sintoma | O que fazer |
