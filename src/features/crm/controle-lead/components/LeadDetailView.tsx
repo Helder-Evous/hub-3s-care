@@ -61,7 +61,13 @@ export function LeadDetailView({ id }: { id: string }) {
           leadId={data.id}
           patientId={data.patient_id}
         />
-        <LeadAppointments rows={data.appointments} />
+        <LeadAppointments
+          rows={data.appointments}
+          clinicId={data.clinic_id}
+          leadId={data.id}
+          patientId={data.patient_id}
+          isLost={data.lost_at != null}
+        />
         <LeadBudgets rows={data.budgets} />
       </div>
       <Toaster richColors position="top-right" />

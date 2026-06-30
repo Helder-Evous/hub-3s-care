@@ -31,6 +31,18 @@ export function groupLeadsByOperationalColumn(
   return columns;
 }
 
+/**
+ * Combina data (`yyyy-mm-dd`) + hora (`HH:mm`) do formulario em um ISO string
+ * (UTC) para gravar em `scheduled_at`. Interpreta no fuso LOCAL do operador.
+ * Retorna null se a data/hora forem invalidas.
+ */
+export function combineDateTimeToISO(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const dt = new Date(`${date}T${time}`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toISOString();
+}
+
 /** Mascara minima de telefone para a UI (mostra apenas os ultimos digitos). */
 export function maskPhone(phone: string | null): string {
   if (!phone) return "—";
