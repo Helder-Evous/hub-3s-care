@@ -118,6 +118,49 @@ Decisão completa em `ADR-0002_KANBAN_COMO_PROJECAO_OPERACIONAL.md`.
 - A projeção é **somente leitura**: não escreve no banco, não substitui `current_stage` nem
   `lead_stage_history`, não altera entidades. Implementada em `resolveLeadOperationalState` (ver doc 14).
 
+### 0.12 Regras de negócio consolidadas (2026-06-30 — auditoria arquitetural)
+
+Refinamento das regras do módulo. **Decisões de negócio aprovadas; implementação não autorizada.**
+
+**Kanban como mesa operacional do CRC (ver `ADR-0003`).** Colunas oficiais:
+`Novo Lead → Agendado → Remarcar → Compareceu → Perdido`. **`Efetivou` deixa de ser coluna**
+(vira indicador/badge/resultado). **Compareceu = encerramento operacional da 3S**; comparecer
+**não** implica efetivar. Efetivação é confirmação **posterior** da clínica (relatório/importação).
+> ⚠️ O código atual do PR #9 ainda exibe `Efetivou` como coluna — **conflito a corrigir** (ver doc 14 e auditoria).
+
+**Movimentação automática (projeção por fatos):** lead criado, appointment criado/faltou/
+cancelou/compareceu, lead perdido; futuramente importações, relatórios, integrações, IA.
+`faltou` → Remarcar; `cancelou` → Remarcar; `compareceu` (sem futuro) → Compareceu.
+
+**Origem × Campanha (separação obrigatória).** **Origem** = canal de entrada (Facebook,
+Instagram, Google, Indicação, base da unidade, lista, WhatsApp, orgânico, Meta/Google Ads).
+**Campanha** = ação/oferta/contexto (Aniversariantes, Implante, Reativação, etc.). Hoje só
+existe **origem** (`crm.lead_sources`); **campanha NÃO existe** — gap para os indicadores
+(melhor origem/campanha, comparecimento e receita por origem/campanha).
+
+**Priorização do card (proposta; auto-perda só com aprovação):** tráfego pago no topo;
+leads quentes em destaque; parados há mais tempo sobem; poucas tentativas sobem; **frio com
+3 tentativas pode ir a Perdido automaticamente — exceto tráfego pago**. Depende de um
+contador de **tentativas** (inexistente hoje). "Tráfego pago" é detectável por
+`lead_sources.category = 'paga'`.
+
+**Dono do comparecimento (ver `ADR-0004`).** O comparecimento pertence ao **CRC que criou o
+appointment** que gerou o comparecimento (não ao primeiro CRC, nem a quem só confirmou).
+**Gap crítico:** `crm.appointments` **não tem `created_by`** — atribuição impossível hoje.
+
+**Alocação CRC × unidade (ver doc 19).** CRC só vê leads das unidades em que está alocado
+**atualmente**; ao sair, perde acesso aos leads ativos, mas mantém suas ações históricas.
+**Gap:** `crm.user_units` não tem **vigência/histórico** (só `active`).
+
+**Observações da unidade (doc 15-cliente / §15 do prompt):** o Kanban deve exibir observações
+operacionais da unidade ao CRC (dentistas, encaixe, horários, regras). **Não existe entidade** hoje.
+
+**Card em uso / observação do lead:** indicar quando alguém opera um card ("Em uso por …") e
+se o lead tem observação. **Não existe** mecanismo de presença/lock nem **campo de observação
+de lead** (existe `patients.notes`, mas é do paciente, não do lead, e não está exposto/editável).
+
+**Importações, Experiência do Cliente e Dashboard:** ver docs 20, 21 e 22.
+
 ---
 
 ## 1. Objetivo

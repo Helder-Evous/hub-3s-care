@@ -51,11 +51,21 @@ Convenção: **a rota é fina** (estados/composição ficam em `components/`, ex
 - **O board agrupa por estado OPERACIONAL, não por `current_stage`** (S2-0, ver `ADR-0002`).
   A função **`resolveLeadOperationalState(lead, appointments, now)`** (em `operational-state.ts`)
   centraliza a projeção; `groupLeadsByOperationalColumn` monta as colunas.
-- **Colunas operacionais:** `Novo Lead, Agendado, Remarcar, Compareceu, Efetivou, Perdido`.
-  Os estágios `em_avaliacao`/`orcamento`/`pos_venda` **não** aparecem no board (continuam no enum).
+- **Colunas operacionais (implementado no PR #9):** `Novo Lead, Agendado, Remarcar, Compareceu,
+  Efetivou, Perdido` (`OPERATIONAL_COLUMN_ORDER`).
+  > ⚠️ **Conflito com `ADR-0003` (2026-06-30):** `Efetivou` **não deve mais ser coluna**. As
+  > colunas oficiais passam a ser `Novo Lead, Agendado, Remarcar, Compareceu, Perdido`. Correção
+  > pendente: remover `efetivado` de `OPERATIONAL_COLUMN_ORDER/LABELS/TONE` e do ramo de
+  > `resolveLeadOperationalState`, realocando leads `efetivado` para **Compareceu** (não podem sumir).
+- Os estágios `em_avaliacao`/`orcamento`/`pos_venda` **não** aparecem no board (continuam no enum).
 - A query do board carrega **fatos operacionais** (hoje `appointments`); a projeção é **somente
   leitura** e extensível a importações/relatórios/integrações/IA no futuro.
-- Cards: nome, telefone (mascarado), badge de origem, responsável, criação, "sem contato".
+- **Card atual (LeadCard):** nome, telefone (mascarado), badge de **origem**, responsável
+  (rótulo "Atribuído"/"Sem responsável" — **não o nome do CRC**), criação, "sem contato".
+  > **Gaps do card vs `ADR-0003`/§8 do prompt:** faltam **unidade**, **campanha** (inexistente),
+  > **nome do CRC**, **data/hora do agendamento**, **tempo até agendar**, **tempo no status**,
+  > **nº de tentativas** (inexistente), **indicador de observação** (inexistente) e **indicador
+  > "em uso"** (inexistente). Cores por origem/prioridade (§9) também não implementadas.
 - **Drag & Drop apenas visual** (@dnd-kit): move o card entre colunas no estado local; **não
   persiste, não muta, não escreve `current_stage`** (ver `ADR-0001`).
 - **Detalhe e histórico continuam mostrando o domínio** (`current_stage`, `lead_stage_history`),

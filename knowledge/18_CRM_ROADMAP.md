@@ -47,6 +47,30 @@ related_docs:
   regra de falta a confirmar com Helder/Jefferson (toca leitura da projeção, não o enum).
 - Observações de agendamento → `lead_activity` tipo `nota` (não reusar `procedure_name`, sem migration).
 
+## 1.3 Consolidação 2026-06-30 (auditoria arquitetural — ver docs 13 §0.12, 19–22, ADR-0003/0004)
+
+Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem Jefferson).
+
+- [ ] **(Alto, frontend) Corrigir colunas do board** — remover `Efetivou` (ADR-0003); colunas
+  oficiais `Novo Lead/Agendado/Remarcar/Compareceu/Perdido`; realocar leads `efetivado` para
+  Compareceu. **Recomendado ANTES do S2-2B.**
+- [ ] **(Crítico, migration) `appointments.created_by`** — habilita o "dono do comparecimento"
+  (ADR-0004) e a futura Premiação. Quanto antes, menos histórico de atribuição se perde.
+- [ ] **(Alto, migration) Entidade de Campanha** — separar de Origem (`lead_sources`); base dos
+  indicadores por campanha (doc 13 §0.12).
+- [ ] **(Médio, migration) Observação do lead** + **contador de tentativas** — para card,
+  edição (§10) e priorização/auto-perda (§7).
+- [ ] **(Médio, migration) Vigência/histórico de `user_units`** — Gestão de Unidades CRC (doc 19).
+- [ ] **(Médio, migration) Observações da unidade** — entidade visível ao CRC (doc 13 §0.12).
+- [ ] **(Baixo, futuro) Card "em uso"** (presença/lock) — não implementar realtime sem aprovação.
+- [ ] **(Futuro) Importações** (leads e agenda) — doc 20.
+- [ ] **(Futuro) Experiência do Cliente + Dashboard configurável** — docs 21 e 22 (novo modelo de acesso de cliente).
+- [ ] **Priorização/cores do card** (§7/§9) — depende de tentativas + origem (`category='paga'`).
+
+> **S2-2B** (operação do agendamento) depende do `created_by` para não criar appointments sem
+> dono. Recomendação na auditoria: corrigir o board (ADR-0003) e decidir o `created_by` antes de
+> ampliar a criação/remarcação de appointments.
+
 ## 2. Funil clínico (estágios futuros)
 - `em_avaliacao` (`evaluations`), `efetivado` (`treatments`/1º procedimento), `pos_venda` (`post_sales`).
 - `clinical_revenue` (receita clínica — **nunca** confundir com receita 3S).

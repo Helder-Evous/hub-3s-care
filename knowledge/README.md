@@ -15,7 +15,13 @@
 | 17 | [crm-types.ts temporário](17_CRM_TYPES_TEMPORARIO.md) | TypeScript | Novo — limitação da geração, drift, plano de substituição |
 | ADR-0001 | [Drag & Drop persistente (não aprovado)](ADR-0001_DND_PERSISTENTE.md) | Decisão (ADR) | Novo — DnD apenas visual; condição para aprovar |
 | ADR-0002 | [Kanban como Projeção Operacional](ADR-0002_KANBAN_COMO_PROJECAO_OPERACIONAL.md) | Decisão (ADR) | Novo — board reflete a próxima ação do CRC (S2-0, PR #9) |
-| 18 | [Roadmap pós-MVP](18_CRM_ROADMAP.md) | Planejamento | Atualizado — S2-0 (Kanban operacional) e decomposição do S2-2 |
+| ADR-0003 | [Kanban como Mesa Operacional do CRC](ADR-0003_KANBAN_COMO_MESA_OPERACIONAL_DO_CRC.md) | Decisão (ADR) | Novo — `Efetivou` deixa de ser coluna; colunas oficiais do CRC |
+| ADR-0004 | [Dono do Comparecimento](ADR-0004_DONO_DO_COMPARECIMENTO.md) | Decisão (ADR) | Novo — crédito do comparecimento; bloqueado por gap (`appointments.created_by`) |
+| 18 | [Roadmap pós-MVP](18_CRM_ROADMAP.md) | Planejamento | Atualizado — consolidação 2026-06-30 (gaps/migrations) |
+| 19 | [Gestão de Unidades CRC](19_CRM_GESTAO_DE_UNIDADES_CRC.md) | Domínio | Novo — alocação CRC×unidade com vigência/histórico (gap) |
+| 20 | [Importações e Status Operacionais](20_CRM_IMPORTACOES_E_STATUS_OPERACIONAIS.md) | Domínio | Novo — importação de leads e de agenda (conceito) |
+| 21 | [Experiência do Cliente](21_EXPERIENCIA_DO_CLIENTE.md) | Domínio | Novo — módulo transversal de visão/acesso do cliente (conceito) |
+| 22 | [Dashboard Configurável do Cliente](22_DASHBOARD_CONFIGURAVEL_DO_CLIENTE.md) | Domínio | Novo — widgets/KPIs/permissões do cliente (conceito) |
 
 > Todos os documentos acima são **locais de engenharia** (rascunhos), não a KB oficial. Numeração e
 > padrão de frontmatter podem mudar na reconciliação com a KB oficial da 3S.
