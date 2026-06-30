@@ -112,9 +112,13 @@ export function useLeadsBoard() {
  * oficial public+crm; ver crm-types.ts). Reutilizado por queries e mutations.
  */
 export function crmSchema() {
+  // Cast temporario: bypassa os tipos do schema `public` ate existir o types.ts
+  // oficial public+crm. `from` aceita qualquer tabela do `crm` e retorna um
+  // builder sem tipagem estrita (os resultados sao validados via `as ... Raw*`).
   return (
     supabase as unknown as {
-      schema: (s: string) => ReturnType<typeof supabase.from>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      schema: (s: string) => { from: (table: string) => any };
     }
   ).schema("crm");
 }
