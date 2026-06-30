@@ -1,9 +1,9 @@
 ---
 documento: 08_GOVERNANCA_DE_TRABALHO_E_REPOSITORIO
-versao: 2.0
-data: 2026-06-24
+versao: 3.0
+data: 2026-06-30
 classificacao: L1 — Operacional/Técnico
-alteracoes: adicionadas seções 7 (ambientes Supabase), 8 (autoridade temporária) e 9 (formato de autorização)
+alteracoes: adicionadas seções 7 (ambientes Supabase), 8 (autoridade temporária) e 9 (formato de autorização) na v2.0; v3.0 acrescenta o ciclo oficial de construção e revisão entre humanos e IAs (seções 10–15), preservando as seções anteriores
 ---
 
 # Governança de Trabalho: Helder, Jefferson e IAs
@@ -124,3 +124,114 @@ Toda autorização deve ser explícita e registrada, contendo quando aplicável:
 - **Validações realizadas.**
 - **Resultado da execução.**
 - **Plano de rollback** para alterações relevantes.
+
+---
+
+## 10. Ciclo oficial de construção e revisão (humanos + IAs)
+
+Toda evolução relevante do Hub segue este ciclo. O objetivo é reduzir o transporte manual de
+contexto, aumentar a rastreabilidade e criar validações automáticas, **sem** retirar a
+autoridade humana sobre decisões relevantes (seções 5 e 8).
+
+### Etapa 1 — Intenção de negócio
+Helder ou Jefferson define: problema; resultado esperado; usuários afetados; limites; riscos; prioridade.
+
+### Etapa 2 — Arquitetura e especificação
+O agente de arquitetura estrutura: proposta; módulo; impacto no Hub; entidades e dados; eventos;
+tarefas de IA; indicadores; riscos; critérios de aceite; decisões pendentes.
+**Decisões relevantes devem ser registradas na Knowledge Base ou em especificação versionada — o
+prompt não pode ser a única fonte da arquitetura.**
+
+### Etapa 3 — Contestação prévia do executor
+Antes de implementar, o executor deve: ler a Knowledge Base; verificar o estado real do
+repositório; comparar a instrução com o código existente; apontar conflitos; apontar premissas
+não comprovadas; identificar excesso de escopo; confirmar o que está autorizado.
+**O executor não obedece silenciosamente.** Diante de conflito relevante entre prompt, KB e
+repositório, ele registra o conflito e **para antes da implementação**, pedindo decisão humana
+(não escolhe silenciosamente uma interpretação).
+
+### Etapa 4 — Autorização humana
+Helder ou Jefferson decide: executar; ajustar; adiar; rejeitar. **A IA não autoriza a própria ação.**
+
+### Etapa 5 — Implementação
+Em branch própria; escopo delimitado; commits compreensíveis; DEV antes do Principal quando
+houver banco; sem alterações extras não autorizadas; com relatório de execução.
+
+### Etapa 6 — Validações determinísticas
+Antes de qualquer revisão por IA ou humana: instalação reproduzível; build; typecheck; lint
+(quando existir); testes (quando existirem); verificações específicas do módulo; validações de
+segurança aplicáveis; conferência dos arquivos alterados. **Testes determinísticos têm prioridade
+sobre opiniões de IA.**
+
+### Etapa 7 — Revisão independente
+O revisor analisa **diretamente** o diff, o código, os documentos relevantes, os critérios de
+aceite, os resultados das validações, os riscos e os itens declarados como não implementados.
+**O revisor não confia apenas no resumo do executor** e deve procurar falhas, conflitos e
+violações — não apenas confirmar a entrega.
+
+### Etapa 8 — Go/No-Go e memória
+Humano decide merge ou correção; a decisão é registrada; a Knowledge Base é atualizada quando
+necessário; implementação e validação ficam vinculadas ao PR; próximas tarefas são registradas.
+
+## 11. Estados de uma evolução
+
+Distinguir explicitamente e nunca pular etapas sem autorização humana:
+
+`ideia` → `hipótese` → `proposta` → `decisão aprovada` → `implementação em andamento` →
+`implementação concluída` → `implementação validada`; além de `regra substituída` e `item cancelado`.
+
+**Nenhuma IA transforma `proposta` em `decisão aprovada` sem autorização humana explícita.**
+A mudança de status documental para "decisão aprovada" exige aprovação humana (ver §14).
+
+## 12. Papéis das IAs
+
+### ChatGPT (ou agente de arquitetura)
+Estratégia; arquitetura; linguagem de negócio; especificação; análise de impacto; e revisão
+independente **quando não for o executor**.
+
+### Claude Code (ou agente executor)
+Leitura da KB; contestação prévia (Etapa 3); implementação; testes; relatório; sinalização de conflitos.
+
+### Agente revisor
+Sessão ou agente **separado**; contexto **fresco**; leitura **direta** do repositório; postura
+**adversarial**; parecer fundamentado.
+
+### IA Supervisor — futuro (NÃO implementado)
+Consolidação de pareceres; classificação de risco; criação de tarefas; escalonamento de exceções;
+rastreabilidade. **Ainda não está sendo implementado.**
+
+## 13. Independência e limitações da revisão entre IAs
+
+- Revisão por outro agente **reduz** risco, mas **não elimina** erros.
+- Modelos **iguais** podem compartilhar pontos cegos.
+- Modelos **diferentes** também podem aceitar a mesma premissa incorreta.
+- **Testes determinísticos têm prioridade** sobre opiniões de IA.
+- A **autoridade humana** permanece obrigatória nos riscos definidos (§14 e seção 8).
+- **GitHub, Knowledge Base e Hub** são os meios oficiais de coordenação entre agentes; **chats
+  são áreas temporárias de trabalho** (ver seção 6).
+
+## 14. Níveis de autonomia
+
+> Estes níveis descrevem o **modelo-alvo**. Na fase inicial atual, a seção 8 (autoridade
+> temporária) permanece vigente: Helder ou Jefferson autorizam individualmente, e as "Regras que
+> permanecem obrigatórias" da seção 8 continuam valendo.
+
+### Alta autonomia (futuro)
+Permitida para tarefas: reversíveis; repetitivas; com critérios objetivos; com testes
+automáticos; sem dados sensíveis; sem impacto financeiro, jurídico ou contratual.
+
+### Autonomia supervisionada
+Para: código funcional; mudanças de UX; automações operacionais; integrações reversíveis;
+alterações com rollback claro.
+
+### Aprovação humana obrigatória
+Para: migrations; RLS; autenticação; dados pessoais ou de pacientes; mudanças destrutivas;
+ambiente Principal; contratos; financeiro; preços; condições comerciais; ações externas de alto
+impacto; e **mudança de status documental para "decisão aprovada"**.
+
+## 15. Limites desta formalização
+
+Esta seção formaliza o ciclo, os papéis e a autonomia, mas **não** autoriza por si só: integração
+direta entre chats de IA; instalação de apps externos de revisão; revisão automática por IA;
+o IA Supervisor; automerge; autoaprovação. Esses itens são evolução futura e exigem autorização
+específica.
