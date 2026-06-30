@@ -1,16 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Project: nndvcsdevbxpgsccyimm — these are public values safe to ship in source.
-// Override via VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY env vars.
-const DEFAULT_URL = "https://nndvcsdevbxpgsccyimm.supabase.co";
-const DEFAULT_KEY = "sb_publishable_ccTz6w39O7OSamtCiPzCTA_aQh8rs7D";
-
+// Sem URL/chave fixas e sem fallback para o ambiente principal (produção).
+// O cliente exige configuração explícita via env (VITE_SUPABASE_* no browser /
+// SUPABASE_* no servidor). Sem env válido, FALHA imediatamente — proteção
+// arquitetural para nunca conectar à produção por engano. Ver RUNNING_LOCALLY.md.
 function createSupabaseClient() {
   const SUPABASE_URL =
-    import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || DEFAULT_URL;
+    import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || DEFAULT_KEY;
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
+
+  if (!SUPABASE_URL) {
+    throw new Error(
+      "VITE_SUPABASE_URL não configurada. Configure o .env (ambiente DEV) antes de iniciar. Ver RUNNING_LOCALLY.md.",
+    );
+  }
+  if (!SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error(
+      "VITE_SUPABASE_PUBLISHABLE_KEY não configurada. Configure o .env (ambiente DEV) antes de iniciar. Ver RUNNING_LOCALLY.md.",
+    );
+  }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
