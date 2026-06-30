@@ -1,9 +1,9 @@
 ---
 title: "Proposta técnica — appointments.scheduled_by (dono do agendamento)"
 doc_id: "23_PROPOSTA_APPOINTMENTS_SCHEDULED_BY"
-version: 0.1-draft
+version: 0.2-draft
 date: 2026-06-30
-status: Proposta técnica — aguardando aprovação; migration NÃO autorizada
+status: Proposta técnica — recomendação GO; migration NÃO autorizada (aguarda Jheferson)
 classification: Interno — Engenharia / Proposta de Migration
 module: Controle de Lead
 schema: crm
@@ -12,133 +12,172 @@ related_docs:
   - ADR-0005_FONTES_DE_DADOS_DO_CONTROLE_DE_LEAD.md
   - 13_CONTROLE_DE_LEAD_DOMAIN_MODEL.md
   - 18_CRM_ROADMAP.md
+changelog:
+  - 0.1-draft (2026-06-30): proposta inicial.
+  - 0.2-draft (2026-06-30): auditoria completa de crm.appointments (colunas, índices, FKs,
+    triggers, grants, RLS); FK recomendada para crm.user_profiles(id); proteção write-once;
+    auditoria adversarial; recomendação GO.
 ---
 
 # Proposta técnica — `crm.appointments.scheduled_by`
 
 > **Documento de proposta. NÃO cria migration, NÃO altera banco/RLS/trigger/enum/código.**
-> A execução exige aprovação humana (Jheferson, por tocar o schema `crm`) e fluxo DEV → Principal.
+> Execução exige aprovação de **Jheferson** (toca o schema `crm`) e fluxo **DEV → Principal**.
 
 ## 1. Problema resolvido
 
-`crm.appointments` **não possui** coluna que identifique o **CRC responsável pelo agendamento**
-(confirmado: colunas atuais não incluem `scheduled_by` nem `created_by`). Sem isso é **impossível**
-atribuir o comparecimento a um CRC — base da futura Premiação. Cada appointment criado hoje
-(S2-2A) nasce **sem dono**, e esse dado é **irreversível** se não for capturado na criação.
+`crm.appointments` **não possui** coluna que identifique o **CRC responsável pelo agendamento**.
+Sem isso é impossível atribuir o comparecimento a um CRC — base da futura **Premiação**. Cada
+appointment criado hoje (S2-2A) nasce **sem dono**, e esse dado é **irreversível** se não for
+capturado na criação.
 
 ## 2. Por que `scheduled_by` (e não `created_by`)
 
-`scheduled_by` = **CRC responsável operacional pelo agendamento**. **Não** é "quem criou
-tecnicamente a linha" (`created_by`), que poderia ser um job de importação, integração ou o
-Relatório Agenda. O nome segue a convenção do schema `crm` (`performed_by`, `changed_by`,
-`lost_by`). Forma verbosa equivalente: `scheduled_by_user_id` — adotamos `scheduled_by`.
+`scheduled_by` = **CRC responsável operacional pelo agendamento** — não "quem criou tecnicamente
+a linha" (job de importação, integração, Relatório Agenda). Nome alinhado à convenção do schema
+`crm` (`performed_by`, `changed_by`, `lost_by`). Forma verbosa equivalente: `scheduled_by_user_id`;
+adotamos `scheduled_by`. Decisão oficial da 3S (ver ADR-0004).
 
-## 3. Impactos
+## 3. Auditoria completa de `crm.appointments` (FATO — principal, 2026-06-30)
 
-- **Premiação:** torna-se construível — o dono do comparecimento é o `scheduled_by` do
-  appointment com `status='compareceu'`. Sem a coluna, a premiação é inviável e não reconstituível.
-- **S2-2B:** é **gate bloqueante**. Confirmar/remarcar/compareceu/faltou/cancelar sem `scheduled_by`
-  acumula appointments sem dono. **Pausar o S2-2B até a coluna existir.**
-- **Importações (doc 20):** a importação de **Agenda/Relatório** atualiza `status` e **não** define
-  o dono; a importação/registro de **Agendamento** é quem informa o CRC. `scheduled_by` deve
-  refletir o CRC informado na origem, nunca o job de importação.
-- **Dashboard (doc 22):** habilita métricas **por CRC** (comparecimento, produtividade, ranking),
-  hoje impossíveis.
+**Colunas (20):** `id, clinic_id, patient_id, lead_id, status, scheduled_at, confirmed_at,
+attended_at, no_show_at, cancelled_at, rescheduled_from, professional_name, procedure_name,
+codefy_id, source_system, external_ref, synced_at, reconciliation_status, created_at, updated_at`.
+→ **Não existe `scheduled_by` nem `created_by`.**
 
-## 4. DDL sugerida (PROPOSTA — `EXEMPLO NÃO AUTORIZADO — NÃO EXECUTAR`)
+**Índices (8):** `appointments_pkey(id)`; `appointments_clinic_codefy_uq(clinic_id, codefy_id)
+WHERE codefy_id IS NOT NULL`; `appointments_clinic_scheduled_idx(clinic_id, scheduled_at)`;
+`appointments_patient_idx(patient_id)`; `appointments_lead_idx(lead_id)`;
+`appointments_clinic_status_idx(clinic_id, status)`; `appointments_rescheduled_from_idx`;
+`appointments_clinic_reconc_idx(clinic_id, reconciliation_status)`. → **Nenhum por dono.**
+
+**FKs (4):**
+- `appointments_clinic_fk` → `public.clinics(id)` ON DELETE RESTRICT
+- `appointments_patient_clinic_fk` → `crm.patients(id, clinic_id)` ON DELETE CASCADE
+- `appointments_lead_patient_fk` → `crm.leads(id, patient_id)`
+- `appointments_rescheduled_from_fk` → `crm.appointments(id)` ON DELETE SET NULL
+→ **Nenhuma FK para usuário.**
+
+**Triggers (2):** `trg_appointments_recalc_stage` (AFTER INSERT OR UPDATE OF status →
+`crm.fn_recalc_lead_stage`); `trg_appointments_touch_updated_at`. → **Nenhum preenche dono.**
+
+**RLS:** habilitada. Policies:
+- `appointments_insert_manage` (INSERT) — `with_check: crm.user_can_manage_module(clinic_id) AND crm.module_enabled_for_clinic(clinic_id)`
+- `appointments_update_manage` (UPDATE) — `using`+`check` iguais ao acima
+- `appointments_select_scoped` (SELECT) — `crm.is_staff_3s() OR (crm.user_has_clinic_access(clinic_id) AND crm.module_enabled_for_clinic(clinic_id))`
+- **Sem policy de DELETE** (cancelamento via `status`).
+
+**Grants:** `authenticated` = **table-level INSERT/SELECT/UPDATE** + column-level em **todas** as
+colunas. `service_role` = ALL. ⚠️ Como o UPDATE é **table-level**, uma nova coluna `scheduled_by`
+nasceria **atualizável** por `authenticated` — precisa ser revogada explicitamente (igual à
+proteção de colunas derivadas feita em `crm.leads`).
+
+## 4. Coluna proposta + FK + índice (`EXEMPLO — NÃO EXECUTAR`)
 
 ```sql
--- Migration futura no schema crm. Aprovação de Jheferson; DEV antes do Principal.
 ALTER TABLE crm.appointments
-  ADD COLUMN scheduled_by uuid;   -- nullable (compatível com linhas existentes / backfill)
+  ADD COLUMN scheduled_by uuid;             -- nullable (compatível com linhas existentes)
+
+ALTER TABLE crm.appointments
+  ADD CONSTRAINT appointments_scheduled_by_fk
+  FOREIGN KEY (scheduled_by) REFERENCES crm.user_profiles(id) ON DELETE RESTRICT;
+
+CREATE INDEX appointments_scheduled_by_idx ON crm.appointments (scheduled_by);
+-- opcional (ranking por CRC): (clinic_id, scheduled_by, status)
 
 COMMENT ON COLUMN crm.appointments.scheduled_by IS
-  'CRC responsável operacional pelo agendamento (dono do appointment). Base da premiação. '
-  'NÃO é quem criou tecnicamente a linha. Imutável após a criação.';
-
--- Índice para agregações por CRC (premiação/dashboards).
-CREATE INDEX IF NOT EXISTS appointments_scheduled_by_idx
-  ON crm.appointments (scheduled_by);
+  'CRC responsável operacional pelo agendamento (dono p/ premiação). Imutável após criação.';
 ```
 
-**Decisão de modelagem (a confirmar):** FK rígida a `auth.users(id)` ou a `crm.user_profiles(id)`,
-ou apenas `uuid` sem FK — seguindo o padrão já usado por `lead_activities.performed_by`
-(verificar antes de executar para manter consistência).
+### FK recomendada: `crm.user_profiles(id)` — justificativa
+- **Consistência:** mesmo alvo de `crm.leads.owner_id` (`leads_owner_id_fkey`). Mantém o padrão do schema.
+- `crm.user_profiles.id` é **1:1 com `auth.users.id`** (criado pelo trigger de signup) → `auth.uid()` = `user_profiles.id`.
+- **Evita FK cross-schema para `auth`** (desencorajado no Supabase); `user_profiles` é RLS-aware, dentro do `crm`.
+- `ON DELETE RESTRICT` **preserva a atribuição** (não permite apagar um CRC com agendamentos). Alternativa `SET NULL` se preferir não bloquear exclusão (perde o dono) — **decisão a fixar**.
 
-## 5. RLS / grants necessários (PROPOSTA)
+### Coluna `nullable`
+`scheduled_by uuid` **NULL** para ser compatível com as linhas existentes (sem backfill obrigatório
+na migration). Para **novos** appointments, app/import sempre preenchem (ver §6). Tornar `NOT NULL`
+exigiria backfill prévio — ver risco #1.
 
-Proteger `scheduled_by` contra alteração após a criação (mesma filosofia das colunas derivadas de
-`leads`):
+## 5. Grants — proteção write-once (`EXEMPLO — NÃO EXECUTAR`)
 
 ```sql
--- EXEMPLO NÃO AUTORIZADO — NÃO EXECUTAR
--- Hoje: grant select, insert, update (tabela inteira) para authenticated.
 REVOKE UPDATE ON crm.appointments FROM authenticated;
 GRANT UPDATE (status, confirmed_at, attended_at, no_show_at, cancelled_at,
-              scheduled_at, rescheduled_from, professional_name, procedure_name)
-  ON crm.appointments TO authenticated;   -- tudo MENOS scheduled_by
+              scheduled_at, rescheduled_from, professional_name, procedure_name,
+              codefy_id, source_system, external_ref, synced_at, reconciliation_status)
+  ON crm.appointments TO authenticated;          -- tudo MENOS scheduled_by
 ```
+- **Insere `scheduled_by`:** `authenticated` (no INSERT) e `service_role` (importações).
+- **Atualiza `scheduled_by`:** **ninguém** via `authenticated` (write-once); só `service_role` em casos administrativos auditados.
+- **NÃO atualiza:** `authenticated` — `scheduled_by` é **imutável** após a criação.
 
-- **INSERT (RLS WITH CHECK):** no fluxo manual (S2-2A), exigir `scheduled_by = auth.uid()` —
-  garante que o operador não atribua o agendamento a outro CRC indevidamente.
-- **Importações/integrações:** seguem por **caminho confiável** (server function / service role)
-  que define `scheduled_by` com o CRC informado na origem; esse caminho **não** passa pela policy
-  `authenticated` de INSERT. *(Decisão de arquitetura — confirmar.)*
+## 6. Comportamento por fluxo (oficial)
 
-## 6. Como preencher
+| Fluxo | `scheduled_by` |
+|---|---|
+| **Cadastro manual (S2-2A)** | `auth.uid()` do operador no INSERT. Recomendado reforçar a policy de INSERT: `with_check (... AND scheduled_by = auth.uid())` — impede um CRC atribuir a outro. |
+| **Importação de Leads** | Não define agendamento; cria/atualiza lead (Novo Lead). |
+| **Importação de Agenda CRC** | **CRC informado no arquivo**, resolvido para `user_profiles.id`, gravado via **caminho confiável (`service_role`/server function)** — **nunca** o usuário que rodou a importação. CRC não resolvível → **rejeitar a linha** (não gravar dono errado). |
+| **Remarcação (S2-2B)** | Antigo → `status='remarcado'` (mantém `scheduled_at` e `scheduled_by`). **Novo appointment** → `scheduled_by = auth.uid()` (quem remarcou) + `rescheduled_from = antigo.id` + `status='agendado'`. |
+| **Relatório Agenda** | **NUNCA** toca `scheduled_by` (garantido pelo write-once); só atualiza `status` + temporais. |
 
-### S2-2A (criar agendamento — código futuro)
-`createAppointment` passa a enviar `scheduled_by: auth.uid()` no INSERT (operador = CRC que agenda).
+## 7. Impacto por módulo
+- **Premiação (futuro):** habilitada — dono = `scheduled_by` do appointment `compareceu`. Sem a coluna, inviável.
+- **Dashboard operacional / do cliente:** métricas por CRC (agendamento, comparecimento, ranking). Legados ficam `null` (ver backfill).
+- **Importações:** precisam resolver o CRC → `user_profiles.id`.
+- **S2-2B:** desbloqueado — confirmar/remarcar/compareceu/faltou/cancelar passam a preservar o dono.
+- **Kanban:** **nenhum impacto** — projeção é por `status`, não usa `scheduled_by`.
+- **Histórico/Timeline/Indicadores/SLA/Ranking/Experiência do Cliente:** ganham a dimensão "quem agendou" (aditivo). Exposição do nome do CRC ao cliente é decisão de permissão; a RLS de SELECT já escopa por clínica.
 
-### Remarcação (S2-2B — código futuro)
-- Appointment antigo: `status='remarcado'`; **mantém** `scheduled_at`, `scheduled_by`.
-- Novo appointment: `scheduled_by = auth.uid()` (CRC que remarcou), `rescheduled_from = antigo.id`,
-  `status='agendado'`, nova `scheduled_at`.
+## 8. Arquivos a alterar **depois** da migration (apenas lista)
+- `src/integrations/supabase/crm-types.ts` (ou `types.ts` oficial) → add `scheduled_by` ao tipo de `appointments`.
+- `src/features/crm/controle-lead/mutations.ts` → `createAppointment` grava `scheduled_by: auth.uid()`; nova mutation de **remarcação** (S2-2B).
+- `src/features/crm/controle-lead/types.ts` / `queries.ts` → expor `scheduled_by` se detalhe/board exibirem o dono.
+- `NewAppointmentModal.tsx` → sem campo novo (auto `auth.uid()`); modal de remarcação no S2-2B.
+- Futuro: módulos de **Premiação**, **Dashboard**, **Importações**.
+- Docs: `ADR-0004` (status → resolvido), este doc 23, `13`/`18`.
 
-### Relatório Agenda (importação de status — futuro)
-- Atualiza **apenas** `status` (e campos temporais correlatos). **NUNCA** escreve/sobrescreve
-  `scheduled_by`. A proteção de coluna (§5) e o caminho de importação devem garantir isso.
+## 9. Plano por fases
+1. **Migration** — coluna + FK + índice + grants write-once. DEV → validação → Principal. Aprovação de Jheferson.
+2. **Back-end** — `createAppointment` grava `scheduled_by`; policy de INSERT reforçada; (S2-2B) remarcação cria novo appointment.
+3. **Front-end** — exibir dono no detalhe (opcional); modal de remarcação.
+4. **Importações** — parser resolve CRC → `scheduled_by` via service_role.
+5. **Premiação** — agregação por `scheduled_by` do appointment `compareceu`.
 
-## 7. Validações em DEV (antes de promover ao Principal)
+## 10. Auditoria adversarial
 
-1. Aplicar a migration no **DEV** (`xcqfdnymadeqeuacqotu`).
-2. `INSERT` em transação revertida simulando o operador: confirmar `scheduled_by = auth.uid()` gravado.
-3. Tentar `UPDATE scheduled_by` como `authenticated`: deve **falhar** (coluna protegida).
-4. Confirmar que a trigger de derivação de estágio continua funcionando (INSERT/UPDATE OF status).
-5. Advisors Supabase sem novos erros; integridade referencial OK.
-6. Confirmar **nenhum impacto** em linhas existentes (ficam com `scheduled_by = null`).
-7. Só então aplicar a **mesma** migration no Principal, com validação pós-aplicação.
+| # | Cenário | Risco | Mitigação |
+|---|---|---|---|
+| 1 | **Comparecimento sem dono** — legados (pré-migration) `null`; import sem CRC resolvido | **Crítico** | Novos sempre setam; import rejeita linha sem CRC; decidir **backfill** dos legados (sem fonte retroativa → provável `null` aceito p/ histórico) |
+| 2 | **Dois CRCs no mesmo comparecimento** — >1 appointment do lead com `compareceu` | **Médio** | Premiação conta o appointment `compareceu`; tie-break por `scheduled_at` mais recente (regra a fixar) |
+| 3 | **Importação sobrescreve responsável** — UPDATE de `scheduled_by` existente | **Alto → Baixo** | **Write-once** (grant revogado); import só seta no INSERT |
+| 4 | **Remarcação perde histórico** — UPDATE de data no antigo em vez de novo appointment | **Alto → Baixo** | Modelo obrigatório: antigo `remarcado` + **novo** com `rescheduled_from` |
+| 5 | **Dashboard inconsistente** — `scheduled_by` null em legados/imports | **Médio** | Decisão de backfill; import resolve CRC; dashboards tratam `null` como "não atribuído" |
+| 6 | **Kanban inconsistente** | **Baixo** | Kanban não usa `scheduled_by` |
+| 7 | **Prêmio calculado errado** — dono null, múltiplos `compareceu`, ou sobrescrita | **Crítico → Baixo** | Soma das mitigações 1–4 |
 
-## 8. Riscos
-
-- **Backfill (Médio):** appointments já existentes ficam com `scheduled_by = null` → premiação só
-  a partir do go-live, salvo regra de backfill aprovada (não há fonte confiável retroativa hoje).
-- **RLS de importação (Médio):** uma policy `scheduled_by = auth.uid()` rígida bloquearia
-  importações; por isso importações usam caminho confiável separado.
-- **FK alvo (Baixo):** escolher `auth.users` vs `user_profiles` sem alinhar com o padrão atual
-  pode exigir ajuste posterior.
-- **Sequência (Crítico se ignorado):** construir S2-2B antes desta coluna gera perda irreversível.
-
-## 9. Rollback
-
+## 11. Rollback (`EXEMPLO — NÃO EXECUTAR`)
 ```sql
--- EXEMPLO NÃO AUTORIZADO — NÃO EXECUTAR
 DROP INDEX IF EXISTS crm.appointments_scheduled_by_idx;
+ALTER TABLE crm.appointments DROP CONSTRAINT IF EXISTS appointments_scheduled_by_fk;
 ALTER TABLE crm.appointments DROP COLUMN IF EXISTS scheduled_by;
--- Restaurar o grant de UPDATE anterior, se tiver sido alterado.
+-- restaurar o grant de UPDATE table-level anterior, se alterado.
 ```
-Reversível e sem perda de dados nas demais colunas. Como a coluna é aditiva e nullable, o rollback
-não afeta o funcionamento atual.
+Aditiva, nullable → rollback sem perda nas demais colunas; não afeta o funcionamento atual.
 
-## 10. Decisões que precisam de aprovação humana antes de executar
+## 12. Recomendação — **GO**
+**GO** para a migration: **aditiva, reversível, baixo risco**; é o gate correto antes do S2-2B e a
+fundação de Premiação/Dashboard/Ranking/SLA.
 
-1. **Jheferson** — autorização para tocar o schema `crm` (ativo dele).
-2. Nome final do campo: `scheduled_by` (recomendado) vs `scheduled_by_user_id`.
-3. Alvo da FK: `auth.users`, `crm.user_profiles` ou `uuid` sem FK (alinhar com `performed_by`).
-4. Estratégia de **backfill** dos appointments existentes (nenhum / regra específica).
-5. Caminho e regra de atribuição de `scheduled_by` em **importações/integrações**.
-6. Confirmar a proteção por **grant de coluna** + a regra de RLS de INSERT.
+**Condições antes de executar:**
+1. **Aprovação de Jheferson** (schema `crm`).
+2. **DEV antes do Principal** (mesma migration validada: advisors, RLS, INSERT em transação revertida
+   confirmando `scheduled_by` gravado e tentativa de UPDATE bloqueada).
+3. Decisões a fixar: **FK on-delete** (RESTRICT recomendado); **backfill** dos legados; **reforço da
+   policy** de INSERT (`scheduled_by = auth.uid()`); **tie-break** p/ múltiplos `compareceu`;
+   **caminho de importação** via service_role.
 
-## 11. Não autorizado nesta tarefa
-Sem migration, sem alteração de banco/RLS/trigger/enum/código, sem S2-2B. Apenas esta proposta
-documental.
+## 13. Não autorizado nesta tarefa
+Sem migration, sem alteração de banco/RLS/trigger/enum/código, sem S2-2B. Apenas esta proposta documental.
