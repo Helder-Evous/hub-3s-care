@@ -145,8 +145,16 @@ contador de **tentativas** (inexistente hoje). "Tráfego pago" é detectável po
 `lead_sources.category = 'paga'`.
 
 **Dono do comparecimento (ver `ADR-0004`).** O comparecimento pertence ao **CRC que criou o
-appointment** que gerou o comparecimento (não ao primeiro CRC, nem a quem só confirmou).
-**Gap crítico:** `crm.appointments` **não tem `created_by`** — atribuição impossível hoje.
+appointment** que gerou o comparecimento (não ao primeiro CRC, nem a quem só confirmou) — ou
+seja, ao **`scheduled_by`** (CRC responsável operacional pelo agendamento, não quem criou a
+linha) do appointment com `status='compareceu'`.
+**Gap crítico:** `crm.appointments` **não tem `scheduled_by`** — atribuição impossível hoje.
+
+**Três entradas oficiais de dados (ver `ADR-0005`).** (1) **Incluir/Importar Leads** (lead,
+unidade, origem, campanha, responsável); (2) **Agendamento CRC** (cria o appointment e **define
+o dono** via `scheduled_by`); (3) **Relatório Agenda** (atualiza `status` — `compareceu`/`faltou`/
+`cancelou` — e **nunca** define o dono). O Kanban se move pela **projeção operacional** a partir
+desses fatos. Efetivação/receita são entradas posteriores da clínica (indicador, não fila).
 
 **Alocação CRC × unidade (ver doc 19).** CRC só vê leads das unidades em que está alocado
 **atualmente**; ao sair, perde acesso aos leads ativos, mas mantém suas ações históricas.

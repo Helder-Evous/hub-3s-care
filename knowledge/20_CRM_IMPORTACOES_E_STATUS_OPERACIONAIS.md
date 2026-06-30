@@ -17,8 +17,14 @@ related_docs:
 
 ## 1. Objetivo
 
-Definir dois tipos de importação que alimentam o módulo. Modelos de planilha serão
+Definir os tipos de importação que alimentam o módulo. Modelos de planilha serão
 fornecidos depois. **Nada implementado nesta fase.**
+
+> As importações são **duas das três entradas oficiais de dados** do módulo (ver
+> `ADR-0005_FONTES_DE_DADOS_DO_CONTROLE_DE_LEAD.md`): (1) Incluir/Importar Leads,
+> (2) Agendamento CRC, (3) Relatório Agenda. A entrada **Agendamento CRC** é a única que
+> define o **dono** do appointment (`scheduled_by` — CRC responsável operacional); o **Relatório
+> Agenda** só **atualiza status** e **nunca** define o dono do comparecimento.
 
 ## 2. Importação de Leads (cria/atualiza leads)
 
@@ -40,8 +46,9 @@ Pode trazer: `agendado`, `compareceu`, `faltou`, `cancelou`, `remarcou`, **`efet
 - **Efetivação e receita não têm entidade** no schema atual (`appointments` não guarda
   receita; não há tabela de efetivação/tratamento). `efetivado` existe só como valor de enum
   em `lead_stage`, sem fonte de verdade (ver ADR-0003).
-- **`appointments` não tem `created_by`** (ADR-0004): importações de agenda atribuiriam
-  comparecimento sem dono — definir regra de atribuição para fatos importados.
+- **`appointments` não tem `scheduled_by`** (ADR-0004/0005): o Relatório Agenda **não** cria dono;
+  ele só atualiza `status` de um appointment já existente. Sem `scheduled_by`, o comparecimento
+  importado fica sem dono — **gap crítico que bloqueia premiação** (ver ADR-0004).
 - **Idempotência:** `appointments.codefy_id` e `external_ref` existem como seams para
   conciliação idempotente; importações devem usá-los para não duplicar.
 

@@ -44,18 +44,20 @@ related_docs:
 - [ ] **S2-2A — criar agendamento** (INSERT em `crm.appointments`; deriva `Agendado`) — sem migration.
 - [ ] **S2-2B — remarcar** (UPDATE `status='remarcado'` + nova data; permanece `Agendado`/`Remarcar`) — sem migration.
 - [ ] **S2-2C — compareceu/faltou** (UPDATE status; `compareceu`→Compareceu, `faltou`→Remarcar) — sem migration;
-  regra de falta a confirmar com Helder/Jefferson (toca leitura da projeção, não o enum).
+  regra de falta a confirmar com Helder/Jheferson (toca leitura da projeção, não o enum).
 - Observações de agendamento → `lead_activity` tipo `nota` (não reusar `procedure_name`, sem migration).
 
 ## 1.3 Consolidação 2026-06-30 (auditoria arquitetural — ver docs 13 §0.12, 19–22, ADR-0003/0004)
 
-Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem Jefferson).
+Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem Jheferson).
 
-- [ ] **(Alto, frontend) Corrigir colunas do board** — remover `Efetivou` (ADR-0003); colunas
-  oficiais `Novo Lead/Agendado/Remarcar/Compareceu/Perdido`; realocar leads `efetivado` para
-  Compareceu. **Recomendado ANTES do S2-2B.**
-- [ ] **(Crítico, migration) `appointments.created_by`** — habilita o "dono do comparecimento"
-  (ADR-0004) e a futura Premiação. Quanto antes, menos histórico de atribuição se perde.
+- [x] **(Alto, frontend) Corrigir colunas do board** — `Efetivou` removido (ADR-0003); colunas
+  oficiais `Novo Lead/Agendado/Remarcar/Compareceu/Perdido`; leads `efetivado` projetam em
+  Compareceu. **Concluído** (commit `fix(crm): remover coluna Efetivou do board operacional`).
+- [ ] **(Crítico, migration OBRIGATÓRIA antes do S2-2B) `appointments.scheduled_by`** — CRC
+  responsável operacional pelo agendamento (não "quem criou a linha"); habilita o "dono do
+  comparecimento" (ADR-0004/0005) e a futura Premiação. Sem ela, **pausar o S2-2B**: cada
+  appointment criado/remarcado nasce sem dono (perda irreversível). Exige Jheferson, DEV antes do Principal.
 - [ ] **(Alto, migration) Entidade de Campanha** — separar de Origem (`lead_sources`); base dos
   indicadores por campanha (doc 13 §0.12).
 - [ ] **(Médio, migration) Observação do lead** + **contador de tentativas** — para card,
@@ -67,8 +69,8 @@ Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem
 - [ ] **(Futuro) Experiência do Cliente + Dashboard configurável** — docs 21 e 22 (novo modelo de acesso de cliente).
 - [ ] **Priorização/cores do card** (§7/§9) — depende de tentativas + origem (`category='paga'`).
 
-> **S2-2B** (operação do agendamento) depende do `created_by` para não criar appointments sem
-> dono. Recomendação na auditoria: corrigir o board (ADR-0003) e decidir o `created_by` antes de
+> **S2-2B** (operação do agendamento) depende do `scheduled_by` para não criar appointments sem
+> dono. Recomendação na auditoria: corrigir o board (ADR-0003) e decidir o `scheduled_by` antes de
 > ampliar a criação/remarcação de appointments.
 
 ## 2. Funil clínico (estágios futuros)

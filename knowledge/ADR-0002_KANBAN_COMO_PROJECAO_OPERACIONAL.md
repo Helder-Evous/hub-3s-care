@@ -107,7 +107,7 @@ domínio, que responde: **"qual é a próxima ação esperada do CRC para este l
    representa a próxima ação.
 2. **Alterar o enum `lead_stage`** (adicionar `remarcar`, remover etapas) — rejeitada agora:
    exigiria migration + canonicalização (frente de governança separada), tocaria o ativo CRM de
-   Jefferson e enrijeceria a UI; a projeção resolve sem custo de banco.
+   Jheferson e enrijeceria a UI; a projeção resolve sem custo de banco.
 3. **Persistir a coluna operacional no banco** — rejeitada: violaria a derivação (CQRS-lite) e o
    `ADR-0001`; criaria inconsistência com `current_stage`.
 

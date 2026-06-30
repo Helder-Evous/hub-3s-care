@@ -39,7 +39,7 @@ ver dados por dentista · ver agenda futura.
   cancelamentos/remarcações por **origem**.
 - Fontes **inexistentes**: **campanha** (não há entidade), **efetivação/receita/ticket médio**
   (sem entidade), **dentista** (só `appointments.professional_name` texto livre, sem cadastro),
-  **dono do comparecimento por CRC** (sem `appointments.created_by` — ADR-0004).
+  **dono do comparecimento por CRC** (sem `appointments.scheduled_by` — ADR-0004).
 - **RLS de cliente** não existe (ver doc 21): hoje a RLS escopa **operadores** por unidade,
   não **clientes**.
 
@@ -48,7 +48,7 @@ ver dados por dentista · ver agenda futura.
 - Views agregadas no schema `crm` (invoker rights, respeitando RLS) por unidade/origem/campanha/período.
 - Permissões por cliente/unidade controlando **quais** widgets e **quais** dimensões (receita,
   CRC, dentista) são visíveis.
-- Depende de: entidade de **campanha**, entidade de **efetivação/receita**, `created_by` em
+- Depende de: entidade de **campanha**, entidade de **efetivação/receita**, `scheduled_by` em
   appointments, cadastro de **dentista** (ou aceitar texto livre), e do modelo de acesso de cliente.
 
 ## 7. Não autorizado nesta fase
