@@ -96,6 +96,28 @@ Acesso: `user_profiles`, `user_units`, `module_clinics`. Domínio: `lead_sources
 ### 0.10 Infra
 Schema `crm` exposto no PostgREST via `pgrst.db_schemas` (ver `15_CRM_POSTGREST_EXPOSURE.md`). Types do `crm` em arquivo **temporário** (ver `17_CRM_TYPES_TEMPORARIO.md`).
 
+### 0.11 Kanban como projeção operacional (S2-0 — PR #9)
+O board do Controle de Lead **não** é uma cópia direta de `lead.current_stage`. Ele é uma
+**projeção operacional** que responde "qual é a próxima ação esperada do CRC para este lead?".
+Decisão completa em `ADR-0002_KANBAN_COMO_PROJECAO_OPERACIONAL.md`.
+
+- `current_stage` **continua existindo** como estágio **derivado** do domínio (CQRS-lite,
+  §0.6–0.8) e permanece a referência usada no **detalhe** e no **histórico** (`lead_stage_history`).
+- O **Kanban operacional** pode projetar uma coluna **diferente** de `current_stage`, calculada
+  a partir de fatos: hoje `leads.lost_at` e `appointments` (status + `scheduled_at`); no futuro,
+  importações, relatórios da clínica, integrações e IA supervisionada.
+- **`remarcar` é coluna operacional de UI**, derivada de `appointments` (agenda vencida sem
+  desfecho, ou `faltou`/`cancelado` sem novo futuro ativo). **Não** é valor do enum `lead_stage`
+  e **não** exige migration.
+- **`efetivado`** ainda **carece de fonte de verdade robusta**: hoje a única fonte é
+  `current_stage = 'efetivado'` (gravação futura). Registrado como lacuna a resolver.
+- Os estágios `em_avaliacao`, `orcamento`, `pos_venda` **continuam no enum**, mas **não aparecem**
+  como colunas do Kanban operacional da 3S (o CRC não negocia orçamento nem faz pós-venda clínica).
+- **Conflito histórico × próxima ação: vence a próxima ação.** Ex.: paciente compareceu no passado
+  mas tem novo agendamento futuro ativo → coluna **Agendado**.
+- A projeção é **somente leitura**: não escreve no banco, não substitui `current_stage` nem
+  `lead_stage_history`, não altera entidades. Implementada em `resolveLeadOperationalState` (ver doc 14).
+
 ---
 
 ## 1. Objetivo

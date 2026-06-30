@@ -30,6 +30,23 @@ related_docs:
 - **Reatribuição de responsável** e **embed do nome do owner** no board.
 - **Edição/anexos de atividades**, data manual (`occurred_at`) — fora do MVP atual.
 
+## 1.1 Kanban operacional (S2-0 — entregue no PR #9; ver `ADR-0002`)
+- [x] **Projeção operacional do board** — `resolveLeadOperationalState`, agrupamento por estado
+  operacional, embed de `appointments` na query do board, DnD apenas visual.
+- [ ] **Definir a fonte de verdade de `efetivado`** — hoje só `current_stage='efetivado'`; avaliar
+  entidade/flag de efetivação (confirmação da clínica) — possível migration futura, fora do S2-0.
+- [ ] **Evoluir importações e relatórios da clínica como fatos operacionais** que alimentem a
+  projeção (além de `appointments`): planilha `.xlsx`, integrações e IA supervisionada.
+- [ ] **Decidir o destino visual** de leads em `em_avaliacao`/`orcamento`/`pos_venda` no board
+  operacional (mapear, agrupar em "Outros" ou ocultar).
+
+## 1.2 S2-2 — Gestão de Agendamentos (a implementar; alimenta a projeção do S2-0)
+- [ ] **S2-2A — criar agendamento** (INSERT em `crm.appointments`; deriva `Agendado`) — sem migration.
+- [ ] **S2-2B — remarcar** (UPDATE `status='remarcado'` + nova data; permanece `Agendado`/`Remarcar`) — sem migration.
+- [ ] **S2-2C — compareceu/faltou** (UPDATE status; `compareceu`→Compareceu, `faltou`→Remarcar) — sem migration;
+  regra de falta a confirmar com Helder/Jefferson (toca leitura da projeção, não o enum).
+- Observações de agendamento → `lead_activity` tipo `nota` (não reusar `procedure_name`, sem migration).
+
 ## 2. Funil clínico (estágios futuros)
 - `em_avaliacao` (`evaluations`), `efetivado` (`treatments`/1º procedimento), `pos_venda` (`post_sales`).
 - `clinical_revenue` (receita clínica — **nunca** confundir com receita 3S).

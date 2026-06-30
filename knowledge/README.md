@@ -14,7 +14,8 @@
 | 16 | [Dados de teste no projeto principal](16_CRM_DADOS_DE_TESTE.md) | Dados | Novo — `[SEED]`/`[TESTE UI]`, impacto em KPIs, cleanup sob autorização |
 | 17 | [crm-types.ts temporário](17_CRM_TYPES_TEMPORARIO.md) | TypeScript | Novo — limitação da geração, drift, plano de substituição |
 | ADR-0001 | [Drag & Drop persistente (não aprovado)](ADR-0001_DND_PERSISTENTE.md) | Decisão (ADR) | Novo — DnD apenas visual; condição para aprovar |
-| 18 | [Roadmap pós-MVP](18_CRM_ROADMAP.md) | Planejamento | Novo — checklist pré-merge, próximos incrementos, dívidas |
+| ADR-0002 | [Kanban como Projeção Operacional](ADR-0002_KANBAN_COMO_PROJECAO_OPERACIONAL.md) | Decisão (ADR) | Novo — board reflete a próxima ação do CRC (S2-0, PR #9) |
+| 18 | [Roadmap pós-MVP](18_CRM_ROADMAP.md) | Planejamento | Atualizado — S2-0 (Kanban operacional) e decomposição do S2-2 |
 
 > Todos os documentos acima são **locais de engenharia** (rascunhos), não a KB oficial. Numeração e
 > padrão de frontmatter podem mudar na reconciliação com a KB oficial da 3S.
@@ -22,5 +23,5 @@
 ## Pendências de sincronização
 
 - Importar a KB oficial da 3S (estrutura numerada: `00_MASTER_CONTEXT_3S.md`, `06_ARQUITETURA_AI_FIRST.md`, `07_PADRAO_DE_MODULOS_DO_HUB.md`, etc.), hoje **inexistente** neste repositório.
-- Reconciliar os rascunhos `13`–`18` + `ADR-0001` com a versão e o padrão oficiais quando a sincronização ocorrer.
+- Reconciliar os rascunhos `13`–`18` + `ADR-0001`/`ADR-0002` com a versão e o padrão oficiais quando a sincronização ocorrer.
 - Confirmar com a liderança a numeração canônica (os slots `13`–`18` são provisórios).

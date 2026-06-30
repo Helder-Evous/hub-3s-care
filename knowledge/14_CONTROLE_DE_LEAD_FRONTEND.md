@@ -31,13 +31,14 @@ Item de menu no `AppShell` (área "Operações" → "Controle de Lead" → "Boar
 
 ## 2. Estrutura da feature (`src/features/crm/controle-lead/`)
 ```
-types.ts        # tipos de UI (LeadBoardCard, LeadDetailData, linhas de histórico/atividade/...)
-labels.ts       # rótulos PT-BR + tons (estágio, origem, activity/appointment/budget status), opções de select
-utils.ts        # groupLeadsByStage, maskPhone, formatRelative/formatDate/formatDateTime/formatCurrency
-queries.ts      # leituras (useLeadsBoard, useLeadDetail, useLeadSources, useEligibleClinics) + crmSchema()
-mutations.ts    # escritas (useCreateLead + dedup, useCreateLeadActivity) + mapMutationError
-index.ts        # barrel da feature (data)
-components/      # board e detalhe (ver abaixo) + barrel
+types.ts                # tipos de UI (LeadBoardCard c/ appointments, LeadBoardColumn operacional, LeadDetailData...)
+operational-state.ts    # projeção operacional do Kanban: resolveLeadOperationalState + LeadOperationalColumn (S2-0)
+labels.ts               # rótulos PT-BR + tons (estágio, coluna operacional, origem, activity/appointment/budget status)
+utils.ts                # groupLeadsByOperationalColumn, maskPhone, formatRelative/formatDate/formatDateTime/formatCurrency
+queries.ts              # leituras (useLeadsBoard c/ embed appointments, useLeadDetail, useLeadSources, useEligibleClinics) + crmSchema()
+mutations.ts            # escritas (useCreateLead + dedup, useCreateLeadActivity) + mapMutationError
+index.ts                # barrel da feature (data)
+components/             # board e detalhe (ver abaixo) + barrel
 ```
 `components/`: `LeadBoard`, `LeadColumn`, `LeadCard`, `DraggableLeadCard`, `NewLeadModal`,
 `LeadDetailView`, `LeadDetailHeader`, `LeadStageHistory`, `LeadActivities`, `LeadAppointments`,
@@ -45,10 +46,20 @@ components/      # board e detalhe (ver abaixo) + barrel
 Convenção: **a rota é fina** (estados/composição ficam em `components/`, ex.: `LeadDetailView`).
 
 ## 3. Board de Leads
-- `useLeadsBoard()` lê `crm.leads` com embeds `patients(...)` e `lead_sources(...)`, ordenado por `created_at desc`.
-- Colunas: ordem canônica + `perdido` ao final; cada coluna com **contador**; scroll horizontal.
+- `useLeadsBoard()` lê `crm.leads` com embeds `patients(...)`, `lead_sources(...)` **e
+  `appointments(id, scheduled_at, status, attended_at, confirmed_at)`**, ordenado por `created_at desc`.
+- **O board agrupa por estado OPERACIONAL, não por `current_stage`** (S2-0, ver `ADR-0002`).
+  A função **`resolveLeadOperationalState(lead, appointments, now)`** (em `operational-state.ts`)
+  centraliza a projeção; `groupLeadsByOperationalColumn` monta as colunas.
+- **Colunas operacionais:** `Novo Lead, Agendado, Remarcar, Compareceu, Efetivou, Perdido`.
+  Os estágios `em_avaliacao`/`orcamento`/`pos_venda` **não** aparecem no board (continuam no enum).
+- A query do board carrega **fatos operacionais** (hoje `appointments`); a projeção é **somente
+  leitura** e extensível a importações/relatórios/integrações/IA no futuro.
 - Cards: nome, telefone (mascarado), badge de origem, responsável, criação, "sem contato".
-- **Drag & Drop apenas visual** (@dnd-kit): move o card no estado local; **não persiste, não muta, não altera estágio** (ver `ADR-0001`).
+- **Drag & Drop apenas visual** (@dnd-kit): move o card entre colunas no estado local; **não
+  persiste, não muta, não escreve `current_stage`** (ver `ADR-0001`).
+- **Detalhe e histórico continuam mostrando o domínio** (`current_stage`, `lead_stage_history`),
+  não a projeção operacional.
 
 ## 4. Novo Lead (real)
 - `NewLeadModal` → `useCreateLead`. Campos: Nome, Telefone, Origem (catálogo via `useLeadSources`), Responsável (= operador atual).
