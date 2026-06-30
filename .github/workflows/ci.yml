@@ -1,0 +1,47 @@
+# CI — validações determinísticas para Pull Requests (Hub 3S, fase 1).
+# Ver knowledge/08_GOVERNANCA_DE_TRABALHO_E_REPOSITORIO.md (Etapa 6 — validações determinísticas).
+#
+# Escopo desta fase: install reproduzível + build. NÃO acessa Supabase, NÃO usa secrets,
+# NÃO executa migrations, NÃO faz deploy/push/merge e NÃO altera arquivos.
+#
+# typecheck (`bunx tsc --noEmit`) e lint (`bun run lint`) NÃO são exigidos nesta fase porque
+# a `main` possui erros PRÉ-EXISTENTES e fora do escopo desta tarefa:
+#   - tsc: 15 erros (src/components/ui/calendar.tsx [react-day-picker], src/lib/events.ts e
+#     src/routes/gestao.eventos.tsx [system_events ausente dos tipos public]);
+#   - lint: ~3599 problemas (majoritariamente prettier/prettier e react-refresh).
+# Torná-los obrigatórios agora deixaria o CI vermelho na chegada; usar `continue-on-error`
+# para esconder a falha é proibido pela governança. Recomendação: uma tarefa de limpeza de
+# baseline (com autorização humana) e, então, promover typecheck → obrigatório e lint depois.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancela execuções antigas do mesmo ref para economizar runners.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Install + Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
+      - name: Install (reproducible)
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
