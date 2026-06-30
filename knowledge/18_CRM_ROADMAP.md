@@ -30,6 +30,49 @@ related_docs:
 - **Reatribuição de responsável** e **embed do nome do owner** no board.
 - **Edição/anexos de atividades**, data manual (`occurred_at`) — fora do MVP atual.
 
+## 1.1 Kanban operacional (S2-0 — entregue no PR #9; ver `ADR-0002`)
+- [x] **Projeção operacional do board** — `resolveLeadOperationalState`, agrupamento por estado
+  operacional, embed de `appointments` na query do board, DnD apenas visual.
+- [ ] **Definir a fonte de verdade de `efetivado`** — hoje só `current_stage='efetivado'`; avaliar
+  entidade/flag de efetivação (confirmação da clínica) — possível migration futura, fora do S2-0.
+- [ ] **Evoluir importações e relatórios da clínica como fatos operacionais** que alimentem a
+  projeção (além de `appointments`): planilha `.xlsx`, integrações e IA supervisionada.
+- [ ] **Decidir o destino visual** de leads em `em_avaliacao`/`orcamento`/`pos_venda` no board
+  operacional (mapear, agrupar em "Outros" ou ocultar).
+
+## 1.2 S2-2 — Gestão de Agendamentos (a implementar; alimenta a projeção do S2-0)
+- [ ] **S2-2A — criar agendamento** (INSERT em `crm.appointments`; deriva `Agendado`) — sem migration.
+- [ ] **S2-2B — remarcar** (UPDATE `status='remarcado'` + nova data; permanece `Agendado`/`Remarcar`) — sem migration.
+- [ ] **S2-2C — compareceu/faltou** (UPDATE status; `compareceu`→Compareceu, `faltou`→Remarcar) — sem migration;
+  regra de falta a confirmar com Helder/Jheferson (toca leitura da projeção, não o enum).
+- Observações de agendamento → `lead_activity` tipo `nota` (não reusar `procedure_name`, sem migration).
+
+## 1.3 Consolidação 2026-06-30 (auditoria arquitetural — ver docs 13 §0.12, 19–22, ADR-0003/0004)
+
+Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem Jheferson).
+
+- [x] **(Alto, frontend) Corrigir colunas do board** — `Efetivou` removido (ADR-0003); colunas
+  oficiais `Novo Lead/Agendado/Remarcar/Compareceu/Perdido`; leads `efetivado` projetam em
+  Compareceu. **Concluído** (commit `fix(crm): remover coluna Efetivou do board operacional`).
+- [ ] **(Crítico, migration OBRIGATÓRIA antes do S2-2B) `appointments.scheduled_by`** — CRC
+  responsável operacional pelo agendamento (não "quem criou a linha"); habilita o "dono do
+  comparecimento" (ADR-0004/0005) e a futura Premiação. Sem ela, **pausar o S2-2B**: cada
+  appointment criado/remarcado nasce sem dono (perda irreversível). Exige Jheferson, DEV antes do Principal.
+- [ ] **(Alto, migration) Entidade de Campanha** — separar de Origem (`lead_sources`); base dos
+  indicadores por campanha (doc 13 §0.12).
+- [ ] **(Médio, migration) Observação do lead** + **contador de tentativas** — para card,
+  edição (§10) e priorização/auto-perda (§7).
+- [ ] **(Médio, migration) Vigência/histórico de `user_units`** — Gestão de Unidades CRC (doc 19).
+- [ ] **(Médio, migration) Observações da unidade** — entidade visível ao CRC (doc 13 §0.12).
+- [ ] **(Baixo, futuro) Card "em uso"** (presença/lock) — não implementar realtime sem aprovação.
+- [ ] **(Futuro) Importações** (leads e agenda) — doc 20.
+- [ ] **(Futuro) Experiência do Cliente + Dashboard configurável** — docs 21 e 22 (novo modelo de acesso de cliente).
+- [ ] **Priorização/cores do card** (§7/§9) — depende de tentativas + origem (`category='paga'`).
+
+> **S2-2B** (operação do agendamento) depende do `scheduled_by` para não criar appointments sem
+> dono. Recomendação na auditoria: corrigir o board (ADR-0003) e decidir o `scheduled_by` antes de
+> ampliar a criação/remarcação de appointments.
+
 ## 2. Funil clínico (estágios futuros)
 - `em_avaliacao` (`evaluations`), `efetivado` (`treatments`/1º procedimento), `pos_venda` (`post_sales`).
 - `clinical_revenue` (receita clínica — **nunca** confundir com receita 3S).

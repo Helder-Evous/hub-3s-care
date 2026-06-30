@@ -8,6 +8,7 @@ import type {
   AppointmentStatus,
   BudgetStatus,
 } from "@/integrations/supabase/crm-types";
+import type { LeadOperationalColumn } from "./operational-state";
 
 export type LeadStageValue = LeadStage;
 
@@ -39,11 +40,17 @@ export type LeadBoardCard = {
   created_at: string;
   patient: LeadPatientPreview | null;
   source: LeadSourcePreview | null;
+  // Agendamentos do lead (subconjunto), usados para derivar a coluna
+  // operacional do board. Read-only — nunca persistidos a partir do board.
+  appointments: LeadAppointmentRow[];
 };
 
-/** Coluna do board (um estagio do funil). */
+/**
+ * Coluna do board, identificada pela coluna OPERACIONAL da 3S (projecao).
+ * Nao corresponde 1:1 ao enum `lead_stage` (ex.: `remarcar` so existe na UI).
+ */
 export type LeadBoardColumn = {
-  stage: LeadStage;
+  stage: LeadOperationalColumn;
   label: string;
   cards: LeadBoardCard[];
 };

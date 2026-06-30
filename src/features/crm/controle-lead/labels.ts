@@ -6,9 +6,40 @@ import type {
   AppointmentStatus,
   BudgetStatus,
 } from "@/integrations/supabase/crm-types";
+import type { LeadOperationalColumn } from "./operational-state";
 
 /** Tons aceitos pelo StatusBadge/StatusDot do projeto. */
 export type BadgeTone = "success" | "warning" | "critical" | "muted" | "primary";
+
+/**
+ * Ordem das colunas OPERACIONAIS do board da 3S (mesa do CRC, ver ADR-0003).
+ * `Efetivou` NAO e coluna (efetivacao = indicador posterior). `em_avaliacao`,
+ * `orcamento` e `pos_venda` continuam no enum `lead_stage`, mas NAO aparecem no
+ * board. `perdido` e a coluna terminal lateral, ao final.
+ */
+export const OPERATIONAL_COLUMN_ORDER: LeadOperationalColumn[] = [
+  "novo",
+  "agendado",
+  "remarcar",
+  "compareceu",
+  "perdido",
+];
+
+export const OPERATIONAL_COLUMN_LABELS: Record<LeadOperationalColumn, string> = {
+  novo: "Novo Lead",
+  agendado: "Agendado",
+  remarcar: "Remarcar",
+  compareceu: "Compareceu",
+  perdido: "Perdido",
+};
+
+export const OPERATIONAL_COLUMN_TONE: Record<LeadOperationalColumn, BadgeTone> = {
+  novo: "muted",
+  agendado: "primary",
+  remarcar: "warning",
+  compareceu: "primary",
+  perdido: "critical",
+};
 
 /**
  * Ordem canonica das colunas do funil (sem `perdido`, que e tratado a parte

@@ -96,6 +96,79 @@ Acesso: `user_profiles`, `user_units`, `module_clinics`. Domínio: `lead_sources
 ### 0.10 Infra
 Schema `crm` exposto no PostgREST via `pgrst.db_schemas` (ver `15_CRM_POSTGREST_EXPOSURE.md`). Types do `crm` em arquivo **temporário** (ver `17_CRM_TYPES_TEMPORARIO.md`).
 
+### 0.11 Kanban como projeção operacional (S2-0 — PR #9)
+O board do Controle de Lead **não** é uma cópia direta de `lead.current_stage`. Ele é uma
+**projeção operacional** que responde "qual é a próxima ação esperada do CRC para este lead?".
+Decisão completa em `ADR-0002_KANBAN_COMO_PROJECAO_OPERACIONAL.md`.
+
+- `current_stage` **continua existindo** como estágio **derivado** do domínio (CQRS-lite,
+  §0.6–0.8) e permanece a referência usada no **detalhe** e no **histórico** (`lead_stage_history`).
+- O **Kanban operacional** pode projetar uma coluna **diferente** de `current_stage`, calculada
+  a partir de fatos: hoje `leads.lost_at` e `appointments` (status + `scheduled_at`); no futuro,
+  importações, relatórios da clínica, integrações e IA supervisionada.
+- **`remarcar` é coluna operacional de UI**, derivada de `appointments` (agenda vencida sem
+  desfecho, ou `faltou`/`cancelado` sem novo futuro ativo). **Não** é valor do enum `lead_stage`
+  e **não** exige migration.
+- **`efetivado`** ainda **carece de fonte de verdade robusta**: hoje a única fonte é
+  `current_stage = 'efetivado'` (gravação futura). Registrado como lacuna a resolver.
+- Os estágios `em_avaliacao`, `orcamento`, `pos_venda` **continuam no enum**, mas **não aparecem**
+  como colunas do Kanban operacional da 3S (o CRC não negocia orçamento nem faz pós-venda clínica).
+- **Conflito histórico × próxima ação: vence a próxima ação.** Ex.: paciente compareceu no passado
+  mas tem novo agendamento futuro ativo → coluna **Agendado**.
+- A projeção é **somente leitura**: não escreve no banco, não substitui `current_stage` nem
+  `lead_stage_history`, não altera entidades. Implementada em `resolveLeadOperationalState` (ver doc 14).
+
+### 0.12 Regras de negócio consolidadas (2026-06-30 — auditoria arquitetural)
+
+Refinamento das regras do módulo. **Decisões de negócio aprovadas; implementação não autorizada.**
+
+**Kanban como mesa operacional do CRC (ver `ADR-0003`).** Colunas oficiais:
+`Novo Lead → Agendado → Remarcar → Compareceu → Perdido`. **`Efetivou` deixa de ser coluna**
+(vira indicador/badge/resultado). **Compareceu = encerramento operacional da 3S**; comparecer
+**não** implica efetivar. Efetivação é confirmação **posterior** da clínica (relatório/importação).
+> ⚠️ O código atual do PR #9 ainda exibe `Efetivou` como coluna — **conflito a corrigir** (ver doc 14 e auditoria).
+
+**Movimentação automática (projeção por fatos):** lead criado, appointment criado/faltou/
+cancelou/compareceu, lead perdido; futuramente importações, relatórios, integrações, IA.
+`faltou` → Remarcar; `cancelou` → Remarcar; `compareceu` (sem futuro) → Compareceu.
+
+**Origem × Campanha (separação obrigatória).** **Origem** = canal de entrada (Facebook,
+Instagram, Google, Indicação, base da unidade, lista, WhatsApp, orgânico, Meta/Google Ads).
+**Campanha** = ação/oferta/contexto (Aniversariantes, Implante, Reativação, etc.). Hoje só
+existe **origem** (`crm.lead_sources`); **campanha NÃO existe** — gap para os indicadores
+(melhor origem/campanha, comparecimento e receita por origem/campanha).
+
+**Priorização do card (proposta; auto-perda só com aprovação):** tráfego pago no topo;
+leads quentes em destaque; parados há mais tempo sobem; poucas tentativas sobem; **frio com
+3 tentativas pode ir a Perdido automaticamente — exceto tráfego pago**. Depende de um
+contador de **tentativas** (inexistente hoje). "Tráfego pago" é detectável por
+`lead_sources.category = 'paga'`.
+
+**Dono do comparecimento (ver `ADR-0004`).** O comparecimento pertence ao **CRC que criou o
+appointment** que gerou o comparecimento (não ao primeiro CRC, nem a quem só confirmou) — ou
+seja, ao **`scheduled_by`** (CRC responsável operacional pelo agendamento, não quem criou a
+linha) do appointment com `status='compareceu'`.
+**Gap crítico:** `crm.appointments` **não tem `scheduled_by`** — atribuição impossível hoje.
+
+**Três entradas oficiais de dados (ver `ADR-0005`).** (1) **Incluir/Importar Leads** (lead,
+unidade, origem, campanha, responsável); (2) **Agendamento CRC** (cria o appointment e **define
+o dono** via `scheduled_by`); (3) **Relatório Agenda** (atualiza `status` — `compareceu`/`faltou`/
+`cancelou` — e **nunca** define o dono). O Kanban se move pela **projeção operacional** a partir
+desses fatos. Efetivação/receita são entradas posteriores da clínica (indicador, não fila).
+
+**Alocação CRC × unidade (ver doc 19).** CRC só vê leads das unidades em que está alocado
+**atualmente**; ao sair, perde acesso aos leads ativos, mas mantém suas ações históricas.
+**Gap:** `crm.user_units` não tem **vigência/histórico** (só `active`).
+
+**Observações da unidade (doc 15-cliente / §15 do prompt):** o Kanban deve exibir observações
+operacionais da unidade ao CRC (dentistas, encaixe, horários, regras). **Não existe entidade** hoje.
+
+**Card em uso / observação do lead:** indicar quando alguém opera um card ("Em uso por …") e
+se o lead tem observação. **Não existe** mecanismo de presença/lock nem **campo de observação
+de lead** (existe `patients.notes`, mas é do paciente, não do lead, e não está exposto/editável).
+
+**Importações, Experiência do Cliente e Dashboard:** ver docs 20, 21 e 22.
+
 ---
 
 ## 1. Objetivo

@@ -1,33 +1,46 @@
 // Utilitarios do board do Controle de Lead (agrupamento, mascaras, datas).
 import type { LeadBoardCard, LeadBoardColumn } from "./types";
-import { LEAD_STAGE_LABELS, LEAD_STAGE_ORDER } from "./labels";
+import { OPERATIONAL_COLUMN_LABELS, OPERATIONAL_COLUMN_ORDER } from "./labels";
+import { resolveLeadOperationalState } from "./operational-state";
 
 /**
- * Agrupa os leads por `current_stage` na ordem canonica, com a coluna
- * `perdido` ao final. current_stage e DERIVADO no banco (read-only aqui).
+ * Agrupa os leads pela coluna OPERACIONAL da 3S (projecao), na ordem
+ * `novo, agendado, remarcar, compareceu, perdido` (Efetivou nao e coluna — ADR-0003).
+ *
+ * A coluna NAO e `current_stage`: ela e derivada dos fatos do dominio
+ * (`lost_at`, `appointments`) por `resolveLeadOperationalState`. Nada e
+ * persistido — projecao puramente de leitura. `current_stage` permanece como
+ * dado historico/canonico (usado no detalhe e no historico do lead).
  */
-export function groupLeadsByStage(cards: LeadBoardCard[]): LeadBoardColumn[] {
-  const columns: LeadBoardColumn[] = LEAD_STAGE_ORDER.map((stage) => ({
+export function groupLeadsByOperationalColumn(
+  cards: LeadBoardCard[],
+  now: Date = new Date(),
+): LeadBoardColumn[] {
+  const columns: LeadBoardColumn[] = OPERATIONAL_COLUMN_ORDER.map((stage) => ({
     stage,
-    label: LEAD_STAGE_LABELS[stage],
+    label: OPERATIONAL_COLUMN_LABELS[stage],
     cards: [],
   }));
-  const lost: LeadBoardColumn = {
-    stage: "perdido",
-    label: LEAD_STAGE_LABELS.perdido,
-    cards: [],
-  };
 
-  const byStage = new Map(columns.map((c) => [c.stage, c]));
+  const byColumn = new Map(columns.map((c) => [c.stage, c]));
   for (const card of cards) {
-    if (card.current_stage === "perdido") {
-      lost.cards.push(card);
-    } else {
-      byStage.get(card.current_stage)?.cards.push(card);
-    }
+    const column = resolveLeadOperationalState(card, card.appointments, now);
+    byColumn.get(column)?.cards.push(card);
   }
 
-  return [...columns, lost];
+  return columns;
+}
+
+/**
+ * Combina data (`yyyy-mm-dd`) + hora (`HH:mm`) do formulario em um ISO string
+ * (UTC) para gravar em `scheduled_at`. Interpreta no fuso LOCAL do operador.
+ * Retorna null se a data/hora forem invalidas.
+ */
+export function combineDateTimeToISO(date: string, time: string): string | null {
+  if (!date || !time) return null;
+  const dt = new Date(`${date}T${time}`);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toISOString();
 }
 
 /** Mascara minima de telefone para a UI (mostra apenas os ultimos digitos). */

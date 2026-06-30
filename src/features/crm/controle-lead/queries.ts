@@ -36,13 +36,23 @@ type RawLeadRow = {
     label: string;
     category: CrmTables<"lead_sources">["category"];
   } | null;
+  appointments:
+    | {
+        id: string;
+        scheduled_at: string;
+        status: AppointmentStatus;
+        attended_at: string | null;
+        confirmed_at: string | null;
+      }[]
+    | null;
 };
 
 const LEADS_BOARD_SELECT =
   "id, clinic_id, patient_id, current_stage, owner_id, source_id, " +
   "last_contact_at, last_activity_at, lost_at, created_at, " +
   "patients ( full_name, phone, status ), " +
-  "lead_sources ( key, label, category )";
+  "lead_sources ( key, label, category ), " +
+  "appointments ( id, scheduled_at, status, attended_at, confirmed_at )";
 
 /**
  * Board de leads do operador (todas as clinicas as quais ele tem acesso/RLS).
@@ -85,6 +95,13 @@ export function useLeadsBoard() {
               category: r.lead_sources.category,
             }
           : null,
+        appointments: (r.appointments ?? []).map((ap) => ({
+          id: ap.id,
+          scheduled_at: ap.scheduled_at,
+          status: ap.status,
+          attended_at: ap.attended_at,
+          confirmed_at: ap.confirmed_at,
+        })),
       }));
     },
   });
@@ -95,9 +112,13 @@ export function useLeadsBoard() {
  * oficial public+crm; ver crm-types.ts). Reutilizado por queries e mutations.
  */
 export function crmSchema() {
+  // Cast temporario: bypassa os tipos do schema `public` ate existir o types.ts
+  // oficial public+crm. `from` aceita qualquer tabela do `crm` e retorna um
+  // builder sem tipagem estrita (os resultados sao validados via `as ... Raw*`).
   return (
     supabase as unknown as {
-      schema: (s: string) => ReturnType<typeof supabase.from>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      schema: (s: string) => { from: (table: string) => any };
     }
   ).schema("crm");
 }

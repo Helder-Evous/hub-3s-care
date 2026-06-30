@@ -194,3 +194,73 @@ export function useCreateLeadActivity() {
     },
   });
 }
+
+// ----------------------------------------------------------------------------
+// S2-2A — Criar agendamento (crm.appointments) — somente INSERT, sob RLS.
+// A app grava clinic_id, patient_id, lead_id, scheduled_at, professional_name,
+// procedure_name. O banco define status='agendado' (default). NAO escreve
+// current_stage/lead_stage_history/last_contact_at/last_activity_at: a derivacao
+// de estagio fica por conta da trigger crm.fn_recalc_lead_stage (AFTER INSERT).
+// Sem coluna de observacao: nada de nota/lead_activity neste incremento.
+// ----------------------------------------------------------------------------
+export type CreateAppointmentInput = {
+  clinic_id: string;
+  lead_id: string;
+  patient_id: string;
+  scheduled_at: string; // ISO (timestamptz)
+  professional_name: string | null;
+  procedure_name: string | null;
+};
+
+export async function createAppointment(input: CreateAppointmentInput): Promise<string> {
+  const { data, error } = await crmSchema()
+    .from("appointments")
+    .insert({
+      clinic_id: input.clinic_id,
+      patient_id: input.patient_id,
+      lead_id: input.lead_id,
+      scheduled_at: input.scheduled_at,
+      professional_name: input.professional_name,
+      procedure_name: input.procedure_name,
+      // status NAO enviado: usa o default 'agendado' da tabela.
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (data as unknown as { id: string }).id;
+}
+
+/**
+ * Cria um agendamento e invalida detail + board. Como o board projeta o estado
+ * operacional a partir de `appointments` (S2-0), o lead passa a aparecer em
+ * "Agendado" quando o novo agendamento for futuro ativo.
+ */
+export function useCreateAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation<string, unknown, CreateAppointmentInput>({
+    mutationFn: createAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "controle-lead", "detail"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["crm", "controle-lead", "board"],
+      });
+    },
+  });
+}
+
+/** Mapeia erros de criacao de agendamento para mensagens amigaveis. */
+export function mapAppointmentError(e: unknown): string {
+  const err = e as { code?: string; message?: string } | null;
+  const code = err?.code;
+  const msg = err?.message ?? "";
+
+  if (code === "23505") return "Agendamento duplicado para esta clínica.";
+  if (code === "23503") return "Dados relacionados inválidos (clínica, paciente ou lead).";
+  if (code === "42501" || /row-level security/i.test(msg)) {
+    return "Sem permissão para criar agendamentos nesta clínica.";
+  }
+  if (msg) return `Erro do banco: ${msg}`;
+  return "Erro inesperado ao criar o agendamento.";
+}
