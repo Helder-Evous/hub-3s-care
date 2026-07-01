@@ -2,7 +2,7 @@
 // Supabase JS no schema crm, com a AUTENTICACAO NORMAL do operador (RLS aplica).
 // NUNCA usa service_role. NAO seta current_stage (derivado pelo dominio).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { ActivityType } from "@/integrations/supabase/crm-types";
+import type { ActivityType, AppointmentStatus } from "@/integrations/supabase/crm-types";
 import { supabase } from "@/integrations/supabase/client";
 import { crmSchema } from "./queries";
 
@@ -272,4 +272,110 @@ export function mapAppointmentError(e: unknown): string {
   }
   if (msg) return `Erro do banco: ${msg}`;
   return "Erro inesperado ao criar o agendamento.";
+}
+
+// ----------------------------------------------------------------------------
+// S2-2B — Operacao do agendamento: confirmar / compareceu / faltou / cancelar.
+// Somente UPDATE de `status` + o campo temporal correspondente. NAO altera
+// scheduled_by (write-once) nem current_stage/lead_stage_history: a derivacao de
+// estagio fica com a trigger crm.fn_recalc_lead_stage (AFTER UPDATE OF status).
+// A projecao operacional (S2-0) move o board: confirmado->Agendado,
+// compareceu->Compareceu, faltou/cancelado->Remarcar.
+// ----------------------------------------------------------------------------
+export type AppointmentAction = "confirmar" | "compareceu" | "faltou" | "cancelar";
+
+const APPOINTMENT_ACTION_MAP: Record<
+  AppointmentAction,
+  { status: AppointmentStatus; tsField: "confirmed_at" | "attended_at" | "no_show_at" | "cancelled_at" }
+> = {
+  confirmar: { status: "confirmado", tsField: "confirmed_at" },
+  compareceu: { status: "compareceu", tsField: "attended_at" },
+  faltou: { status: "faltou", tsField: "no_show_at" },
+  cancelar: { status: "cancelado", tsField: "cancelled_at" },
+};
+
+export type UpdateAppointmentStatusInput = {
+  id: string;
+  action: AppointmentAction;
+};
+
+export async function updateAppointmentStatus(input: UpdateAppointmentStatusInput): Promise<void> {
+  const { status, tsField } = APPOINTMENT_ACTION_MAP[input.action];
+  const patch: Record<string, unknown> = { status, [tsField]: new Date().toISOString() };
+  // RLS escopa por clinica (user_can_manage_module); filtramos so por id.
+  const { error } = await crmSchema().from("appointments").update(patch).eq("id", input.id);
+  if (error) throw error;
+}
+
+/** Confirmar/Compareceu/Faltou/Cancelar. Invalida detail + board (projecao). */
+export function useUpdateAppointmentStatus() {
+  const queryClient = useQueryClient();
+  return useMutation<void, unknown, UpdateAppointmentStatusInput>({
+    mutationFn: updateAppointmentStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm", "controle-lead", "detail"] });
+      queryClient.invalidateQueries({ queryKey: ["crm", "controle-lead", "board"] });
+    },
+  });
+}
+
+// ----------------------------------------------------------------------------
+// S2-2B — Remarcacao (ADR-0004): NAO altera a data do antigo. Cria um NOVO
+// appointment (status default 'agendado', scheduled_by = auth.uid() de quem
+// remarcou, rescheduled_from = antigo) e marca o antigo como 'remarcado'. Assim
+// o dono do comparecimento futuro sera quem remarcou; o antigo preserva o seu.
+// ----------------------------------------------------------------------------
+export type RescheduleAppointmentInput = {
+  old_id: string;
+  clinic_id: string;
+  lead_id: string;
+  patient_id: string;
+  scheduled_at: string; // ISO (timestamptz) — nova data/hora
+  professional_name: string | null;
+  procedure_name: string | null;
+};
+
+export async function rescheduleAppointment(input: RescheduleAppointmentInput): Promise<string> {
+  const { data: userData } = await supabase.auth.getUser();
+  const scheduledBy = userData.user?.id ?? null;
+
+  // 1) cria o NOVO appointment (agendado por default), vinculado ao antigo.
+  const { data, error } = await crmSchema()
+    .from("appointments")
+    .insert({
+      clinic_id: input.clinic_id,
+      patient_id: input.patient_id,
+      lead_id: input.lead_id,
+      scheduled_at: input.scheduled_at,
+      professional_name: input.professional_name,
+      procedure_name: input.procedure_name,
+      scheduled_by: scheduledBy,
+      rescheduled_from: input.old_id,
+      // status NAO enviado: usa o default 'agendado'.
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const newId = (data as unknown as { id: string }).id;
+
+  // 2) marca o antigo como 'remarcado' (mantem scheduled_at e scheduled_by).
+  const { error: updErr } = await crmSchema()
+    .from("appointments")
+    .update({ status: "remarcado" as AppointmentStatus })
+    .eq("id", input.old_id);
+  if (updErr) throw updErr;
+
+  return newId;
+}
+
+/** Remarca (novo appointment + antigo -> remarcado). Invalida detail + board. */
+export function useRescheduleAppointment() {
+  const queryClient = useQueryClient();
+  return useMutation<string, unknown, RescheduleAppointmentInput>({
+    mutationFn: rescheduleAppointment,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm", "controle-lead", "detail"] });
+      queryClient.invalidateQueries({ queryKey: ["crm", "controle-lead", "board"] });
+    },
+  });
 }
