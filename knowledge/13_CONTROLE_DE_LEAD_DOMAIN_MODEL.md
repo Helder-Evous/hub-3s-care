@@ -262,7 +262,15 @@ Bridge por `codefy_id` (UNIQUE) + upsert idempotente; conciliação em batch com
 **Domínio:** `crm.patients`, `crm.leads`, `crm.lead_sources`, `crm.lead_activities`, `crm.lead_stage_history`, `crm.appointments`, `crm.budgets`.
 
 ### 6.2 Futuras (reservadas)
-`crm.evaluations`, `crm.treatments`, `crm.clinical_revenue`, `crm.post_sales`, `crm.campaigns`, `crm.organizations` (+members), `crm.import_batches`/`crm.import_rows`, `crm.codefy_reconciliations`, `crm.lead_scores` (+ IA).
+`crm.evaluations`, `crm.treatments`, `crm.clinical_revenue`, `crm.post_sales`, `crm.campaigns`, `crm.organizations` (+members), `crm.import_batches`/`crm.import_rows`, `crm.codefy_reconciliations`, `crm.lead_scores` (+ IA), **`crm.lead_attempts`**.
+
+**`crm.lead_attempts`** (tentativa como entidade de negócio) — relacionamento canônico
+`Lead → LeadAttempt → Appointment` via `appointments.source_attempt_id`, regra **find-or-create**
+(sem duplicidade: nunca `2 tentativas` para `1 contato`), **canal × origem** distintos, múltiplas
+origens (CRC/consultor/IA/api/importação/sistema). Base de produtividade/conversão/premiação/IA.
+Ver [`S2-3B_LEAD_ATTEMPTS_DOMAIN.md`](S2-3B_LEAD_ATTEMPTS_DOMAIN.md) e
+[`ADR-0006_MODELO_DE_TENTATIVAS.md`](ADR-0006_MODELO_DE_TENTATIVAS.md). **Não implementado**
+(migration futura; exige Jheferson e DEV antes do Principal).
 
 ### 6.3 ERD conceitual (resumo)
 ```

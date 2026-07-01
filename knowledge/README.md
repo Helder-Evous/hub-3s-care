@@ -18,12 +18,14 @@
 | ADR-0003 | [Kanban como Mesa Operacional do CRC](ADR-0003_KANBAN_COMO_MESA_OPERACIONAL_DO_CRC.md) | Decisão (ADR) | Novo — `Efetivou` deixa de ser coluna; colunas oficiais do CRC |
 | ADR-0004 | [Dono do Comparecimento](ADR-0004_DONO_DO_COMPARECIMENTO.md) | Decisão (ADR) | Novo — crédito do comparecimento; bloqueado por gap (`appointments.scheduled_by`) |
 | ADR-0005 | [Fontes de Dados do Controle de Lead](ADR-0005_FONTES_DE_DADOS_DO_CONTROLE_DE_LEAD.md) | Decisão (ADR) | Novo — 3 entradas oficiais + matriz de fontes de verdade |
+| ADR-0006 | [Modelo de Tentativas (lead_attempts)](ADR-0006_MODELO_DE_TENTATIVAS.md) | Decisão (ADR) | Novo — `Lead→LeadAttempt→Appointment`; sem duplicidade; canal×origem (não implementado) |
 | 18 | [Roadmap pós-MVP](18_CRM_ROADMAP.md) | Planejamento | Atualizado — consolidação 2026-06-30 (gaps/migrations) |
 | 19 | [Gestão de Unidades CRC](19_CRM_GESTAO_DE_UNIDADES_CRC.md) | Domínio | Novo — alocação CRC×unidade com vigência/histórico (gap) |
 | 20 | [Importações e Status Operacionais](20_CRM_IMPORTACOES_E_STATUS_OPERACIONAIS.md) | Domínio | Novo — importação de leads e de agenda (conceito) |
 | 21 | [Experiência do Cliente](21_EXPERIENCIA_DO_CLIENTE.md) | Domínio | Novo — módulo transversal de visão/acesso do cliente (conceito) |
 | 22 | [Dashboard Configurável do Cliente](22_DASHBOARD_CONFIGURAVEL_DO_CLIENTE.md) | Domínio | Novo — widgets/KPIs/permissões do cliente (conceito) |
 | 23 | [Proposta — appointments.scheduled_by](23_PROPOSTA_APPOINTMENTS_SCHEDULED_BY.md) | Proposta de Migration | Novo — DDL/RLS/validações para o dono do agendamento (não autorizada) |
+| S2-3B | [Modelo de Domínio de Tentativas](S2-3B_LEAD_ATTEMPTS_DOMAIN.md) | Domínio | Novo — entidade `lead_attempts`, fluxo/elegibilidade, plano por fases (não implementado) |
 
 > Todos os documentos acima são **locais de engenharia** (rascunhos), não a KB oficial. Numeração e
 > padrão de frontmatter podem mudar na reconciliação com a KB oficial da 3S.
