@@ -8,8 +8,9 @@ Leia primeiro, nesta ordem:
 4. `03_PESSOAS_E_RESPONSABILIDADES.md`
 5. `05_REGRAS_DE_DECISAO_E_APROVACOES.md`
 6. `06_ARQUITETURA_AI_FIRST.md`
-7. `14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md`
-8. o documento específico do módulo solicitado.
+7. `08_GOVERNANCA_DE_TRABALHO_E_REPOSITORIO.md`
+8. `14_MODELO_OPERACIONAL_AGENTICO_E_AUTOMACAO.md`
+9. o documento específico do módulo solicitado.
 
 ## Instrução base
 
