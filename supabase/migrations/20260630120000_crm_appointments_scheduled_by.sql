@@ -100,6 +100,8 @@ create policy appointments_insert_manage
   with check (
     crm.user_can_manage_module(clinic_id)
     and crm.module_enabled_for_clinic(clinic_id)
-    and (scheduled_by = auth.uid() or scheduled_by is null)
+    and (scheduled_by = (select auth.uid()) or scheduled_by is null)
   );
+-- Nota: `(select auth.uid())` (em vez de `auth.uid()`) evita a reavaliacao por
+-- linha do initplan (advisor auth_rls_initplan); resultado funcional identico.
 -- ============================================================================
