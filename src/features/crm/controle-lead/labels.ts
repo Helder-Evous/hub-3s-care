@@ -42,6 +42,34 @@ export const OPERATIONAL_COLUMN_TONE: Record<LeadOperationalColumn, BadgeTone> =
 };
 
 /**
+ * Proxima acao operacional sugerida por coluna (Painel Operacional do CRC).
+ * E o texto em destaque do card: responde "o que eu devo fazer agora?".
+ */
+export const OPERATIONAL_NEXT_ACTION: Record<LeadOperationalColumn, string> = {
+  novo: "Fazer primeiro contato",
+  agendado: "Confirmar presença",
+  remarcar: "Remarcar consulta",
+  compareceu: "Operação encerrada",
+  perdido: "Sem ação",
+};
+
+/**
+ * Cores do card por coluna operacional (barra lateral + ponto de status).
+ * Novo=azul, Agendado=amarelo, Remarcar=laranja, Compareceu=verde, Perdido=vermelho.
+ * Classes estaticas (nao concatenadas) para o JIT do Tailwind detectar.
+ */
+export const OPERATIONAL_COLUMN_ACCENT: Record<
+  LeadOperationalColumn,
+  { bar: string; dot: string; text: string }
+> = {
+  novo: { bar: "bg-blue-500", dot: "bg-blue-500", text: "text-blue-600" },
+  agendado: { bar: "bg-amber-500", dot: "bg-amber-500", text: "text-amber-600" },
+  remarcar: { bar: "bg-orange-500", dot: "bg-orange-500", text: "text-orange-600" },
+  compareceu: { bar: "bg-green-500", dot: "bg-green-500", text: "text-green-600" },
+  perdido: { bar: "bg-red-500", dot: "bg-red-500", text: "text-red-600" },
+};
+
+/**
  * Ordem canonica das colunas do funil (sem `perdido`, que e tratado a parte
  * como coluna lateral terminal). No MVP, `em_avaliacao`/`efetivado`/`pos_venda`
  * costumam ficar vazios (dependem de etapas futuras).
