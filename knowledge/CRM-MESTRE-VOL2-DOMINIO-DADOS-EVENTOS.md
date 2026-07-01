@@ -53,8 +53,12 @@ O banco representa o domínio e **nunca a interface**.
 ### Valores dos enums de tentativa (promovido do ADR-0006 / S2-3B em 2026-07-01)
 - `attempt_channel`: `telefone, whatsapp, instagram, email, presencial, sms, outro`.
 - `attempt_origin`: `manual_crc, manual_consultor, ia, api, importacao, sistema`.
-- `attempt_result`: `sem_resposta, caixa_postal, ocupado, numero_invalido, nao_interessado,
-  contato_realizado, conversou, interessado, retorno, sem_resultado, agendou`.
+- `attempt_result`: `sem_resposta, ocupado, caixa_postal, numero_invalido, nao_interessado,
+  interessado, retornar_depois, agendado`.
+  - **Elegíveis** (originam/reutilizam agendamento): `interessado, retornar_depois, agendado`.
+  - **Não elegíveis:** `sem_resposta, ocupado, caixa_postal, numero_invalido, nao_interessado`.
+  - Conjunto consolidado pela decisão de 2026-07-01 (substitui a lista provisória do
+    ADR-0006, que tinha 11 valores).
 
 ### Vínculo tentativa → agendamento
 - `crm.appointments.source_attempt_id` (FK → `crm.lead_attempts.id`) referencia a tentativa

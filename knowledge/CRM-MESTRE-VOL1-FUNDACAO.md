@@ -82,19 +82,19 @@ tecnologia**. Nenhum ADR novo poderá conter regra de negócio.
   Appointment**. Todo agendamento tem **exatamente uma** tentativa que o originou.
 - **O agendamento não é uma nova tentativa** — é o **resultado** de uma tentativa.
 - **Sem tentativa elegível prévia:** o sistema **cria automaticamente** uma tentativa
-  (origem = sistema, resultado = agendou) e a vincula (Cenário A).
+  (origem = sistema, resultado = agendado) e a vincula (Cenário A).
 - **Com tentativa elegível prévia:** o sistema **reutiliza** a existente como origem do
   agendamento; **nunca duplica** (Cenário B).
 - **Uma tentativa origina no máximo um agendamento.**
-- **Resultados elegíveis** para originar/reutilizar: `contato_realizado, conversou,
-  interessado, retorno, sem_resultado`.
+- **Resultados elegíveis** para originar/reutilizar: `interessado, retornar_depois,
+  agendado`.
 - **Resultados não elegíveis** (nunca geram agendamento automático nem podem ser
-  reutilizados): `sem_resposta, caixa_postal, ocupado, numero_invalido, nao_interessado`.
+  reutilizados): `sem_resposta, ocupado, caixa_postal, numero_invalido, nao_interessado`.
 - **Canal ≠ Origem:** Canal é o meio; Origem é quem/qual sistema gerou a tentativa (CRC,
   consultor, IA, api, importação, sistema). Nunca tratar como sinônimos.
-- **Pendência de decisão (não implementar por inferência):** a **janela de elegibilidade**
-  (por quanto tempo uma tentativa permanece reutilizável — ex.: 24–72h, por clínica) ainda
-  **não foi definida** e deve ser decidida antes de qualquer implementação.
+- **Janela de elegibilidade (decidida 2026-07-01):** **24 horas**. Uma tentativa é elegível
+  se pertence ao mesmo Lead, ocorreu nas últimas 24h, não foi usada em outro Appointment e
+  teve resultado elegível. Detalhamento completo em **CRM-LIFECYCLE-001**.
 
 ### Dono do Comparecimento
 > Regra promovida do ADR-0004 em 2026-07-01 (DECISÃO 2c). É regra de negócio (base da

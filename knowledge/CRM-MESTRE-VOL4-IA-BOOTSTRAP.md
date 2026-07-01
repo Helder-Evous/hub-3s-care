@@ -38,9 +38,10 @@ Toda IA deve iniciar a sessão lendo a documentação oficial **nesta ordem**:
 4. CRM-DOM-001
 5. CRM-DATA-001
 6. CRM-EVT-001
-7. CRM-UX-001
-8. CRM-KPI-001
-9. CRM-IA-001
+7. CRM-LIFECYCLE-001
+8. CRM-UX-001
+9. CRM-KPI-001
+10. CRM-IA-001
 
 ### Regras obrigatórias do Bootstrap
 - A documentação é a fonte oficial de verdade.
