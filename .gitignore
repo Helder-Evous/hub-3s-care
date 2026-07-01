@@ -47,3 +47,8 @@ package-lock.json
 
 # Knowledge Base restrita — nunca versionar no repositório geral
 knowledge/restricted/
+
+# Saídas de validação/local e artefatos de teste — nunca versionar
+tmp/
+playwright-report/
+test-results/

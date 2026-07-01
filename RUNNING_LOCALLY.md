@@ -73,6 +73,49 @@ git pull
 
 ---
 
+## Validação visual do S2-2B (local, opcional)
+
+Script **local/manual** para conferir a operação do agendamento (Controle de Lead)
+no seu PC, com login real no DEV. **Não** faz parte do build nem do CI, e **não**
+contém credenciais — elas são lidas de variáveis de ambiente.
+
+Pré-requisitos: o app rodando (`bun run dev`), `.env` apontando para o **DEV** e um
+Chrome/Chromium instalado.
+
+```powershell
+$env:CRC_EMAIL="seu-email@dominio.com"; `
+$env:CRC_PASSWORD="sua-senha"; `
+$env:APP_URL="http://localhost:8080"; `
+node scripts/validate-s2-2b.local.mjs
+```
+
+Ou (bash/macOS/Linux):
+
+```bash
+CRC_EMAIL="seu-email@dominio.com" CRC_PASSWORD="sua-senha" \
+  APP_URL="http://localhost:8080" node scripts/validate-s2-2b.local.mjs
+```
+
+O script é **READ-ONLY por padrão**: faz login, abre `/crm/controle-lead`, tira
+screenshots, confere as 5 colunas (Novo Lead, Agendado, Remarcar, Compareceu,
+Perdido) e que **Efetivou não é coluna**, abre um lead e detecta os botões de ação.
+As saídas ficam em `tmp/s2-2b-validation/` (screenshots + `report.md`), pasta
+ignorada pelo Git.
+
+Para exercitar as ações que **mudam dados no DEV** (Confirmar/Compareceu/Faltou/
+Cancelar/Remarcar), use um lead de teste descartável e opte explicitamente:
+
+```bash
+RUN_ACTIONS=1 TEST_LEAD_ID="<uuid-de-um-lead-de-teste>" \
+  CRC_EMAIL="..." CRC_PASSWORD="..." APP_URL="http://localhost:8080" \
+  node scripts/validate-s2-2b.local.mjs
+```
+
+Se o binário do Chrome não for encontrado, defina `CHROME_PATH` com o caminho do
+executável.
+
+---
+
 ## Segurança
 
 - **Nunca remova o `.env`.** Sem ele, o projeto **falha propositalmente** ao iniciar a

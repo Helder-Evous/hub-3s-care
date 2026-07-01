@@ -13,3 +13,5 @@ export { LeadActivities } from "./LeadActivities";
 export { LeadAppointments } from "./LeadAppointments";
 export { LeadBudgets } from "./LeadBudgets";
 export { NewActivityModal } from "./NewActivityModal";
+export { NewAppointmentModal } from "./NewAppointmentModal";
+export { RescheduleAppointmentModal } from "./RescheduleAppointmentModal";
