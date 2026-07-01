@@ -5,7 +5,13 @@ import { cn } from "@/lib/utils";
 import { DraggableLeadCard } from "./DraggableLeadCard";
 import type { LeadBoardColumn } from "../types";
 
-export function LeadColumn({ column }: { column: LeadBoardColumn }) {
+export function LeadColumn({
+  column,
+  clinicNames,
+}: {
+  column: LeadBoardColumn;
+  clinicNames: Map<string, string>;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: column.stage });
   const isLost = column.stage === "perdido";
 
@@ -31,7 +37,13 @@ export function LeadColumn({ column }: { column: LeadBoardColumn }) {
         {column.cards.length === 0 ? (
           <p className="px-1 py-10 text-center text-xs text-muted-foreground">Nenhum lead</p>
         ) : (
-          column.cards.map((card) => <DraggableLeadCard key={card.id} card={card} />)
+          column.cards.map((card) => (
+            <DraggableLeadCard
+              key={card.id}
+              card={card}
+              clinicName={clinicNames.get(card.clinic_id)}
+            />
+          ))
         )}
       </div>
     </div>

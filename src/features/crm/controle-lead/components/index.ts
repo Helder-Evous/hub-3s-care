@@ -3,6 +3,9 @@ export { LeadBoard } from "./LeadBoard";
 export { LeadColumn } from "./LeadColumn";
 export { LeadCard } from "./LeadCard";
 export { DraggableLeadCard } from "./DraggableLeadCard";
+export { AttemptsSummary } from "./AttemptsSummary";
+export { PresenceBadge } from "./PresenceBadge";
+export { PriorityBadge } from "./PriorityBadge";
 export { NewLeadModal } from "./NewLeadModal";
 
 // Detalhe do lead (somente leitura).

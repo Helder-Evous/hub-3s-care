@@ -1,7 +1,7 @@
 // Board com drag & drop (SOMENTE FRONTEND). Mantem um estado local das colunas
 // derivado dos dados reais e move cartoes entre colunas apenas visualmente.
 // NAO ha mutation, NAO ha persistencia: ao refazer a query o estado se realinha.
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -11,6 +11,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import { useClinics } from "@/lib/queries";
 import { groupLeadsByOperationalColumn } from "../utils";
 import { LeadColumn } from "./LeadColumn";
 import { LeadCard } from "./LeadCard";
@@ -22,6 +23,14 @@ export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
     groupLeadsByOperationalColumn(leads),
   );
   const [activeCard, setActiveCard] = useState<LeadBoardCard | null>(null);
+
+  // Nome da unidade (obrigatorio no card). `clinics` vive no schema public;
+  // resolvemos por mapa client-side (sem embed cross-schema). Leitura cacheada.
+  const { data: clinics = [] } = useClinics();
+  const clinicNames = useMemo(
+    () => new Map(clinics.map((c) => [c.id, c.name])),
+    [clinics],
+  );
 
   // Re-sincroniza com os dados reais quando a query muda (refetch/cache).
   useEffect(() => {
@@ -77,13 +86,17 @@ export function LeadBoard({ leads }: { leads: LeadBoardCard[] }) {
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {columns.map((column) => (
-          <LeadColumn key={column.stage} column={column} />
+          <LeadColumn key={column.stage} column={column} clinicNames={clinicNames} />
         ))}
       </div>
       <DragOverlay dropAnimation={null}>
         {activeCard ? (
           <div className="w-80">
-            <LeadCard card={activeCard} dragging />
+            <LeadCard
+              card={activeCard}
+              clinicName={clinicNames.get(activeCard.clinic_id)}
+              dragging
+            />
           </div>
         ) : null}
       </DragOverlay>

@@ -5,7 +5,13 @@ import { CSS } from "@dnd-kit/utilities";
 import { LeadCard } from "./LeadCard";
 import type { LeadBoardCard } from "../types";
 
-export function DraggableLeadCard({ card }: { card: LeadBoardCard }) {
+export function DraggableLeadCard({
+  card,
+  clinicName,
+}: {
+  card: LeadBoardCard;
+  clinicName?: string;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
   });
@@ -21,7 +27,7 @@ export function DraggableLeadCard({ card }: { card: LeadBoardCard }) {
       }}
       className="touch-none outline-none"
     >
-      <LeadCard card={card} />
+      <LeadCard card={card} clinicName={clinicName} />
     </div>
   );
 }
