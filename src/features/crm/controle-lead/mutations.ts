@@ -3,6 +3,7 @@
 // NUNCA usa service_role. NAO seta current_stage (derivado pelo dominio).
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ActivityType } from "@/integrations/supabase/crm-types";
+import { supabase } from "@/integrations/supabase/client";
 import { crmSchema } from "./queries";
 
 /**
@@ -198,9 +199,12 @@ export function useCreateLeadActivity() {
 // ----------------------------------------------------------------------------
 // S2-2A — Criar agendamento (crm.appointments) — somente INSERT, sob RLS.
 // A app grava clinic_id, patient_id, lead_id, scheduled_at, professional_name,
-// procedure_name. O banco define status='agendado' (default). NAO escreve
-// current_stage/lead_stage_history/last_contact_at/last_activity_at: a derivacao
-// de estagio fica por conta da trigger crm.fn_recalc_lead_stage (AFTER INSERT).
+// procedure_name e scheduled_by (= auth.uid(), o CRC responsavel operacional).
+// O banco define status='agendado' (default). NAO escreve current_stage/
+// lead_stage_history/last_contact_at/last_activity_at: a derivacao de estagio
+// fica por conta da trigger crm.fn_recalc_lead_stage (AFTER INSERT).
+// scheduled_by e write-once (grant) e a policy de INSERT exige = auth.uid()
+// (ou NULL); nunca podemos atribuir o agendamento a outro CRC pelo app.
 // Sem coluna de observacao: nada de nota/lead_activity neste incremento.
 // ----------------------------------------------------------------------------
 export type CreateAppointmentInput = {
@@ -213,6 +217,10 @@ export type CreateAppointmentInput = {
 };
 
 export async function createAppointment(input: CreateAppointmentInput): Promise<string> {
+  // Dono operacional do agendamento = CRC logado. auth.uid() (server-side) === user.id.
+  const { data: userData } = await supabase.auth.getUser();
+  const scheduledBy = userData.user?.id ?? null;
+
   const { data, error } = await crmSchema()
     .from("appointments")
     .insert({
@@ -222,6 +230,7 @@ export async function createAppointment(input: CreateAppointmentInput): Promise<
       scheduled_at: input.scheduled_at,
       professional_name: input.professional_name,
       procedure_name: input.procedure_name,
+      scheduled_by: scheduledBy,
       // status NAO enviado: usa o default 'agendado' da tabela.
     })
     .select("id")
