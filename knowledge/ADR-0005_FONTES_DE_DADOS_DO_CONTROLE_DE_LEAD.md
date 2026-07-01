@@ -3,7 +3,7 @@ title: "ADR-0005: Fontes de dados do Controle de Lead (3 entradas + fontes de ve
 doc_id: "ADR-0005_FONTES_DE_DADOS_DO_CONTROLE_DE_LEAD"
 version: 1.0.0
 date: 2026-06-30
-status: Aceito (decisão de domínio) — implementação não autorizada
+status: SUPERSEDED (2026-07-01, parte normativa) — promovida para CRM-BR-001 (Vol.1). Parte técnica permanece como engenharia.
 classification: Interno — Engenharia / Decisão de Arquitetura (ADR)
 module: Controle de Lead
 schema: crm
@@ -15,6 +15,12 @@ related_docs:
 ---
 
 # ADR-0005 — Fontes de dados do Controle de Lead
+
+> **⚠️ SUPERSEDED (parte normativa, 2026-07-01).** As três entradas oficiais, a matriz de
+> fontes de verdade, "Relatório Agenda nunca define o dono" e "Campanha ≠ Origem" foram
+> **promovidas para `CRM-BR-001`** (Vol.1 — seção "Fontes de Dados e Conciliação da Agenda").
+> A **parte técnica** (migration, chave de conciliação, DDL) permanece como documentação de
+> engenharia. Fonte de verdade da regra: `CRM-MESTRE-VOL1-FUNDACAO.md`.
 
 ## Contexto
 
