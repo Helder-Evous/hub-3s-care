@@ -60,8 +60,11 @@ Ordenado por dependência/risco. Itens de migration tocam o schema `crm` (exigem
   appointment criado/remarcado nasce sem dono (perda irreversível). Exige Jheferson, DEV antes do Principal.
 - [ ] **(Alto, migration) Entidade de Campanha** — separar de Origem (`lead_sources`); base dos
   indicadores por campanha (doc 13 §0.12).
-- [ ] **(Médio, migration) Observação do lead** + **contador de tentativas** — para card,
-  edição (§10) e priorização/auto-perda (§7).
+- [ ] **(Alto, migration) Tentativas como entidade (`crm.lead_attempts`)** — modelo
+  `Lead → LeadAttempt → Appointment` (`appointments.source_attempt_id`), **find-or-create** sem
+  duplicidade, **canal × origem**; base de produtividade/conversão/IA/premiação. Ver
+  `S2-3B_LEAD_ATTEMPTS_DOMAIN.md` + `ADR-0006`. **Bloqueio:** não automatizar tentativa antes da entidade existir.
+- [ ] **(Médio, migration) Observação do lead** — para card e edição (§10).
 - [ ] **(Médio, migration) Vigência/histórico de `user_units`** — Gestão de Unidades CRC (doc 19).
 - [ ] **(Médio, migration) Observações da unidade** — entidade visível ao CRC (doc 13 §0.12).
 - [ ] **(Baixo, futuro) Card "em uso"** (presença/lock) — não implementar realtime sem aprovação.
