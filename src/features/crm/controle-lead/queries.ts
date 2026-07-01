@@ -26,6 +26,7 @@ type RawLeadRow = {
   last_activity_at: string | null;
   lost_at: string | null;
   created_at: string;
+  owner: { full_name: string | null } | null;
   patients: {
     full_name: string;
     phone: string | null;
@@ -50,6 +51,7 @@ type RawLeadRow = {
 const LEADS_BOARD_SELECT =
   "id, clinic_id, patient_id, current_stage, owner_id, source_id, " +
   "last_contact_at, last_activity_at, lost_at, created_at, " +
+  "owner:user_profiles!leads_owner_id_fkey ( full_name ), " +
   "patients ( full_name, phone, status ), " +
   "lead_sources ( key, label, category ), " +
   "appointments ( id, scheduled_at, status, attended_at, confirmed_at )";
@@ -76,6 +78,7 @@ export function useLeadsBoard() {
         patient_id: r.patient_id,
         current_stage: r.current_stage,
         owner_id: r.owner_id,
+        owner_name: r.owner?.full_name ?? null,
         source_id: r.source_id,
         last_contact_at: r.last_contact_at,
         last_activity_at: r.last_activity_at,

@@ -33,6 +33,8 @@ export type LeadBoardCard = {
   patient_id: string;
   current_stage: LeadStage;
   owner_id: string | null;
+  /** Nome do CRC responsavel (owner). null quando sem responsavel/sem acesso. */
+  owner_name: string | null;
   source_id: string | null;
   last_contact_at: string | null;
   last_activity_at: string | null;
@@ -44,6 +46,39 @@ export type LeadBoardCard = {
   // operacional do board. Read-only — nunca persistidos a partir do board.
   appointments: LeadAppointmentRow[];
 };
+
+// ----------------------------------------------------------------------------
+// Tipos DE DESIGN (S2-3) — sem fonte de dados real ainda. Preparam o card para
+// evoluir sem refatoracao. Ver knowledge/12 (gaps: crm.lead_attempts, lead_presence).
+// ----------------------------------------------------------------------------
+
+/**
+ * Resumo operacional de tentativas de contato exibido no card.
+ * Enquanto `crm.lead_attempts` NAO existir, `total` e sempre 0 e `last` e null
+ * (nada e inventado). Ver proposta de entidade em knowledge/12.
+ */
+export type LeadAttemptsSummary = {
+  total: number;
+  last: { at: string; channel: string } | null;
+};
+
+/**
+ * Presenca de um CRC no lead (colaboracao entre CRCs). DESIGN-ONLY: sem backend,
+ * sem realtime, sem lock. Hoje sempre `null` (nenhuma fonte). Futuro: crm.lead_presence.
+ */
+export type LeadPresence = {
+  mode: "viewing" | "editing" | "calling";
+  user_id: string;
+  user_name: string;
+  /** true quando a presenca e do proprio CRC logado. */
+  is_self: boolean;
+};
+
+/**
+ * Prioridade do lead (futuro: IA Supervisor). DESIGN-ONLY: sem fonte hoje;
+ * o badge so aparece quando houver dado. Nao inventamos prioridade.
+ */
+export type LeadPriority = "alta" | "media" | "baixa";
 
 /**
  * Coluna do board, identificada pela coluna OPERACIONAL da 3S (projecao).
