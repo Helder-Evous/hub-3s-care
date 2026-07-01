@@ -92,6 +92,24 @@ export function formatDateTime(iso: string | null): string {
   });
 }
 
+/**
+ * Duracao curta desde um timestamp ate agora ("3 dias", "5 h", "45 min", "agora").
+ * Usado no card para "Parado há ...". Retorna null se a data for invalida/nula.
+ */
+export function formatDurationSince(iso: string | null, now: Date = new Date()): string | null {
+  if (!iso) return null;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const diffMin = Math.floor((now.getTime() - date.getTime()) / 60000);
+  if (diffMin < 1) return "agora";
+  if (diffMin < 60) return `${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH} h`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD === 1) return "1 dia";
+  return `${diffD} dias`;
+}
+
 /** Valor monetario em BRL (— quando nulo). */
 export function formatCurrency(value: number | null, currency = "BRL"): string {
   if (value == null || Number.isNaN(value)) return "—";
