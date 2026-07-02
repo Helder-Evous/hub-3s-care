@@ -3,7 +3,7 @@ title: "ADR-0006: Tentativa como entidade de negócio e origem do agendamento (l
 doc_id: "ADR-0006_MODELO_DE_TENTATIVAS"
 version: 1.0
 data: 2026-06-30
-status: Aceito (direção) — implementação não autorizada
+status: SUPERSEDED (2026-07-01) — regra de negócio promovida para CRM-BR-001/CRM-DATA-001. Mantido como histórico técnico.
 classificacao: L1 — Engenharia / Decisão de Arquitetura (ADR)
 proprietario: Helder e Jheferson
 module: Controle de Lead
@@ -15,6 +15,12 @@ related_docs:
 ---
 
 # ADR-0006 — Modelo de Tentativas (`lead_attempts`) e origem do agendamento
+
+> **⚠️ SUPERSEDED (2026-07-01).** A **regra de negócio** (elegibilidade, Cenário A/B, sem
+> duplicidade, Canal ≠ Origem) foi promovida para **`CRM-BR-001`** (Vol.1) e os **valores de
+> enum + `source_attempt_id`** para **`CRM-DATA-001`** (Vol.2). A **janela de elegibilidade**
+> e a forma de imposição (trigger vs RPC) seguem como decisões **de engenharia em aberto**.
+> Mantido como histórico. Fonte de verdade: volumes CRM-MESTRE.
 
 ## Contexto
 O card exibe "Tentativas" mas não há entidade que as represente (`attemptsSummaryOf` é

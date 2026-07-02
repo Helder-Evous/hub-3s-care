@@ -3,7 +3,7 @@ title: "ADR-0004: Dono do Comparecimento (atribuição de crédito por appointme
 doc_id: "ADR-0004_DONO_DO_COMPARECIMENTO"
 version: 1.1.0
 date: 2026-06-30
-status: Aceito (decisão de domínio) — BLOQUEADO por gap de schema (sem migration nesta tarefa)
+status: SUPERSEDED (2026-07-01) — regra promovida para CRM-BR-001 (Vol.1). Mantido como histórico.
 classification: Interno — Engenharia / Decisão de Arquitetura (ADR)
 module: Controle de Lead
 schema: crm
@@ -19,6 +19,11 @@ changelog:
 ---
 
 # ADR-0004 — Dono do Comparecimento
+
+> **⚠️ SUPERSEDED (2026-07-01).** A regra de negócio deste ADR foi **promovida para
+> `CRM-BR-001`** (Vol.1 — seção "Dono do Comparecimento"). A coluna `scheduled_by`, tratada
+> aqui como gap, **já existe e é gravada** no schema `crm`. Este documento é mantido apenas
+> como **histórico da decisão**; a fonte de verdade é `CRM-MESTRE-VOL1-FUNDACAO.md`.
 
 ## Contexto
 
