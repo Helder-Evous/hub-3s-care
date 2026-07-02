@@ -41,6 +41,7 @@ Campanha (`leads.campaign_id`) é **opcional**.
 - **`active boolean default true`** segue o padrão real do catálogo `lead_sources` (não há
   enum de status para catálogos no schema).
 - **CHECK** `campaigns_dates_ck`: `end_date >= start_date` quando ambas existirem.
+- **UNIQUE** `campaigns_clinic_name_uq` em `(clinic_id, name)`: sem campanha duplicada por clínica.
 
 ## 3. Coluna em `crm.leads`
 - `campaign_id uuid` **nullable** (aditiva). **`source_id` não é tocada.**
@@ -73,7 +74,7 @@ drop table if exists crm.campaigns;  -- remove indice/trigger/policies junto
 | Nulo | Impacto em leads/dados existentes | Coluna nullable, sem backfill; `source_id` intacto |
 | Baixo | `leads.campaign_id` apontar campanha de **outra clínica** | FK simples (mesmo padrão de `source_id`). Se quiser reforço, futuro: `unique(id, clinic_id)` em campaigns + FK composta `(campaign_id, clinic_id)` |
 | Baixo | Gestão de campanhas via app | Nesta fase é **read-only** p/ authenticated (padrão catálogo); policy de escrita p/ gestor/staff pode ser adicionada depois se o produto exigir |
-| Baixo | Nomes de campanha duplicados por clínica | Não há unique em `(clinic_id, name)` (não solicitado); pode ser adicionado se desejado |
+| Nulo | Nomes de campanha duplicados por clínica | Resolvido: UNIQUE `(clinic_id, name)` |
 | Nulo | Kanban/status/scheduled_by/source_id | Nenhuma alteração |
 
 ## 7. Validações planejadas no DEV

@@ -35,7 +35,11 @@ create table if not exists crm.campaigns (
 
   -- Sanidade do periodo (quando ambas as datas existirem).
   constraint campaigns_dates_ck
-    check (end_date is null or start_date is null or end_date >= start_date)
+    check (end_date is null or start_date is null or end_date >= start_date),
+
+  -- Nao permitir campanha duplicada (mesmo nome) na mesma clinica.
+  constraint campaigns_clinic_name_uq
+    unique (clinic_id, name)
 );
 
 comment on table crm.campaigns is
